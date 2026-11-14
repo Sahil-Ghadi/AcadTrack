@@ -2,6 +2,7 @@
  * Step 4 tests: Timetable slots, clash prevention (409), lecture sessions & cancel.
  * Run with server started: npx tsx tests/timetable.test.ts
  */
+import "dotenv/config";
 
 const BASE = "http://localhost:5000";
 
@@ -130,6 +131,13 @@ async function run() {
   // 6. Non-clashing slot creation -> 201
   let createdSlotId = 0;
   await test("POST /slots non-clashing -> 201", async () => {
+    // Clean up any test slots from previous runs
+    const pool = (await import("../src/config/db")).default;
+    await pool.query(
+      `DELETE FROM lecture_session WHERE timetable_slot_id IN (SELECT id FROM timetable_slot WHERE room = 'R999')`
+    );
+    await pool.query(`DELETE FROM timetable_slot WHERE room = 'R999'`);
+
     const assignRes = await fetch(`${BASE}/api/academic/assignments`, {
       headers: { Authorization: `Bearer ${adminToken}` },
     });
@@ -142,15 +150,15 @@ async function run() {
       body: JSON.stringify({
         subject_assignment_id: co501.id,
         day_of_week: 6, // Saturday
-        period_no: 4,
-        start_time: "12:00",
-        end_time: "13:00",
-        room: "R204",
+        period_no: 12,
+        start_time: "17:00",
+        end_time: "18:00",
+        room: "R999",
       }),
     });
-    assert(res.status === 201, `Expected 201, got ${res.status}`);
-    const body = await res.json();
-    createdSlotId = body.id;
+    const b = await res.json();
+    assert(res.status === 201, `Expected 201, got ${res.status}: ${JSON.stringify(b)}`);
+    createdSlotId = b.id;
   });
 
   // 7. Generate lecture sessions for that slot
