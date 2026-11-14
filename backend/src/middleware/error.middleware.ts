@@ -19,6 +19,14 @@ export function errorHandler(
   res: Response,
   _next: NextFunction,
 ): void {
+  // --- Custom error with status code ---
+  if (typeof err === "object" && err !== null && ("status" in err || "statusCode" in err)) {
+    const status = Number((err as any).status || (err as any).statusCode);
+    const message = (err as any).message || "An error occurred";
+    res.status(status).json({ message });
+    return;
+  }
+
   // --- Zod validation errors ---
   if (err instanceof ZodError) {
     res.status(400).json({
