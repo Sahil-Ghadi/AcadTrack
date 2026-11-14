@@ -3,6 +3,7 @@ import cors from "cors";
 import authRoutes from "./routes/auth.routes";
 import institutionRoutes from "./routes/institution.routes";
 import academicRoutes from "./routes/academic.routes";
+import timetableRoutes from "./routes/timetable.routes";
 import { errorHandler } from "./middleware/error.middleware";
 
 const app = express();
@@ -24,6 +25,7 @@ app.get("/health", (_req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/institution", institutionRoutes);
 app.use("/api/academic", academicRoutes);
+app.use("/api/timetable", timetableRoutes);
 
 // Central error handler (must be last)
 app.use(errorHandler);
