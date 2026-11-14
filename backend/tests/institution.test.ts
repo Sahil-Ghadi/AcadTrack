@@ -95,15 +95,16 @@ async function run() {
   });
 
   // 7. Admin creates department -> 201
+  const testDeptCode = `T${Date.now().toString().slice(-4)}`;
   await test("POST /departments admin -> 201", async () => {
     const res = await fetch(`${BASE}/api/institution/departments`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${adminToken}` },
-      body: JSON.stringify({ name: "Information Technology", code: "IT" }),
+      body: JSON.stringify({ name: "Information Technology", code: testDeptCode }),
     });
     assert(res.status === 201, `Expected 201, got ${res.status}`);
     const body = await res.json();
-    assert(body.code === "IT", `Expected IT, got ${body.code}`);
+    assert(body.code === testDeptCode, `Expected ${testDeptCode}, got ${body.code}`);
   });
 
   // 8. Duplicate department -> 409

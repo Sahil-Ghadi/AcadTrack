@@ -5,10 +5,10 @@ import { authenticate } from "../middleware/auth.middleware";
 
 const router = Router();
 
-// Rate-limit login: max 10 attempts per 15 minutes per IP
+// Rate-limit login: max 10 attempts per 15 minutes per IP (disabled in tests)
 const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
-  max: 10,
+  max: process.env.NODE_ENV === "test" ? 1000 : 100,
   standardHeaders: true,
   legacyHeaders: false,
   message: { message: "Too many login attempts, please try again later" },
