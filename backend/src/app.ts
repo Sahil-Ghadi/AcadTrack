@@ -5,6 +5,7 @@ import institutionRoutes from "./routes/institution.routes";
 import academicRoutes from "./routes/academic.routes";
 import timetableRoutes from "./routes/timetable.routes";
 import attendanceRoutes from "./routes/attendance.routes";
+import marksRoutes from "./routes/marks.routes";
 import { errorHandler } from "./middleware/error.middleware";
 
 const app = express();
@@ -28,6 +29,7 @@ app.use("/api/institution", institutionRoutes);
 app.use("/api/academic", academicRoutes);
 app.use("/api/timetable", timetableRoutes);
 app.use("/api/attendance", attendanceRoutes);
+app.use("/api/marks", marksRoutes);
 
 // Central error handler (must be last)
 app.use(errorHandler);
