@@ -2,6 +2,7 @@ import type { Request, Response } from "express";
 import * as timetableService from "../services/timetable.service";
 import {
   createTimetableSlotSchema,
+  updateTimetableSlotSchema,
   generateSessionsSchema,
 } from "../validators/timetable.validator";
 
@@ -17,7 +18,17 @@ function scopedDeptId(req: Request): number | undefined {
 // ======================== TIMETABLE SLOTS ========================
 
 export async function listSlots(req: Request, res: Response) {
-  const deptId = req.query.department_id ? Number(req.query.department_id) : scopedDeptId(req);
+  let deptId: number | undefined;
+  if (req.user!.role === "dept_admin") {
+    deptId = req.user!.departmentId!;
+    if (req.query.department_id && Number(req.query.department_id) !== deptId) {
+      res.status(403).json({ message: "Department admins can only view slots for their own department" });
+      return;
+    }
+  } else if (req.query.department_id) {
+    deptId = Number(req.query.department_id);
+  }
+
   const termId = req.query.term_id ? Number(req.query.term_id) : undefined;
   const facultyId = req.query.faculty_id ? Number(req.query.faculty_id) : undefined;
   const sectionId = req.query.section_id ? Number(req.query.section_id) : undefined;
@@ -37,15 +48,56 @@ export async function listSlots(req: Request, res: Response) {
   res.json(rows);
 }
 
+export async function exportSlotsCsv(req: Request, res: Response) {
+  let deptId: number | undefined;
+
+  if (req.user!.role === "dept_admin") {
+    deptId = req.user!.departmentId!;
+    if (req.query.department_id && Number(req.query.department_id) !== deptId) {
+      res.status(403).json({ message: "Department admins can only export timetable for their own department" });
+      return;
+    }
+  } else if (req.query.department_id) {
+    deptId = Number(req.query.department_id);
+  }
+
+  const termId = req.query.term_id ? Number(req.query.term_id) : undefined;
+
+  const csv = await timetableService.exportSlotsCsv(collegeId(req), {
+    departmentId: deptId,
+    termId,
+  });
+
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", 'attachment; filename="timetable_export.csv"');
+  res.status(200).send(csv);
+}
+
 export async function createSlot(req: Request, res: Response) {
   const parsed = createTimetableSlotSchema.safeParse(req.body);
   if (!parsed.success) throw parsed.error;
-  const row = await timetableService.createSlot(collegeId(req), parsed.data);
+  const row = await timetableService.createSlot(collegeId(req), parsed.data, scopedDeptId(req));
   res.status(201).json(row);
 }
 
+export async function updateSlot(req: Request, res: Response) {
+  const parsed = updateTimetableSlotSchema.safeParse(req.body);
+  if (!parsed.success) throw parsed.error;
+  const row = await timetableService.updateSlot(
+    Number(req.params.id),
+    collegeId(req),
+    parsed.data,
+    scopedDeptId(req),
+  );
+  res.json(row);
+}
+
 export async function deleteSlot(req: Request, res: Response) {
-  const success = await timetableService.deleteSlot(Number(req.params.id), collegeId(req));
+  const success = await timetableService.deleteSlot(
+    Number(req.params.id),
+    collegeId(req),
+    scopedDeptId(req),
+  );
   if (!success) {
     res.status(404).json({ message: "Timetable slot not found" });
     return;

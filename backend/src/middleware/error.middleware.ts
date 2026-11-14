@@ -39,6 +39,12 @@ export function errorHandler(
     return;
   }
 
+  // --- Multer file upload errors ---
+  if (typeof err === "object" && err !== null && (err as any).name === "MulterError") {
+    res.status(400).json({ message: `File upload error: ${(err as any).message}` });
+    return;
+  }
+
   // --- PostgreSQL errors ---
   if (err instanceof DatabaseError) {
     switch (err.code) {
@@ -66,8 +72,11 @@ export function errorHandler(
         // The trigger's message is in err.message, e.g.
         // "Attendance for lecture 5 is locked and cannot be changed"
         // "IT1 marks (25) exceed the maximum of 20"
-        const isLock = err.message.toLowerCase().includes("locked");
-        const status = isLock ? 409 : 422;
+        // "Faculty clash: ..." / "Room clash: ..."
+        const isConflict =
+          err.message.toLowerCase().includes("locked") ||
+          err.message.toLowerCase().includes("clash");
+        const status = isConflict ? 409 : 422;
         res.status(status).json({ message: err.message });
         return;
       }

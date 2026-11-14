@@ -11,6 +11,7 @@ import {
   Unlock,
   AlertTriangle,
   Download,
+  Upload,
   Users,
   Award,
   BarChart3,
@@ -18,6 +19,7 @@ import {
   Check,
   ChevronRight,
 } from "lucide-react";
+import CsvImportWizard from "@/components/CsvImportWizard";
 import {
   BarChart,
   Bar,
@@ -42,16 +44,21 @@ export default function FacultyDashboard() {
   const [submittingAttendance, setSubmittingAttendance] = useState(false);
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [showAttendanceImportModal, setShowAttendanceImportModal] = useState(false);
+  const [downloadingAttendanceTemplate, setDownloadingAttendanceTemplate] = useState(false);
 
   // --- Tab 2: Marks Entry State ---
   const [assignments, setAssignments] = useState<any[]>([]);
   const [selectedAssignId, setSelectedAssignId] = useState<number | null>(null);
+  const [marksComponent, setMarksComponent] = useState<"IT1" | "IT2" | "IT3" | "ASSIGNMENT">("IT1");
   const [marksStudents, setMarksStudents] = useState<any[]>([]);
   const [marksData, setMarksData] = useState<
     Record<number, { it1: string; it2: string; it3: string; assignment: string }>
   >({});
   const [currentAssignMeta, setCurrentAssignMeta] = useState<any | null>(null);
   const [savingMarks, setSavingMarks] = useState(false);
+  const [showMarksImportModal, setShowMarksImportModal] = useState(false);
+  const [downloadingMarksTemplate, setDownloadingMarksTemplate] = useState(false);
 
   // --- Tab 3: Statistics State ---
   const [statsAssignId, setStatsAssignId] = useState<number | null>(null);
@@ -173,6 +180,54 @@ export default function FacultyDashboard() {
       setActionError(err.message || "Failed to submit attendance");
     } finally {
       setSubmittingAttendance(false);
+    }
+  }
+
+  // --- Template Download Handlers ---
+  async function handleDownloadAttendanceTemplate() {
+    if (!selectedSession) return;
+    setDownloadingAttendanceTemplate(true);
+    try {
+      const csvText = await apiFetch<string>(
+        `/api/import/template/attendance?session_id=${selectedSession.id}`
+      );
+      const blob = new Blob([csvText], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `attendance_template_${selectedDate}_period_${selectedSession.period_no}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setActionError(err.message || "Failed to download attendance template");
+    } finally {
+      setDownloadingAttendanceTemplate(false);
+    }
+  }
+
+  async function handleDownloadMarksTemplate() {
+    if (!selectedAssignId) return;
+    setDownloadingMarksTemplate(true);
+    try {
+      const csvText = await apiFetch<string>(
+        `/api/import/template/marks?assignment_id=${selectedAssignId}&component=${marksComponent}`
+      );
+      const blob = new Blob([csvText], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      const cleanCode = (currentAssignMeta?.subject_code || "subject").replace(/[^a-zA-Z0-9_-]/g, "_");
+      link.download = `marks_template_${cleanCode}_${marksComponent}.csv`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setActionError(err.message || "Failed to download marks template");
+    } finally {
+      setDownloadingMarksTemplate(false);
     }
   }
 
@@ -456,6 +511,14 @@ export default function FacultyDashboard() {
                           <span className="font-semibold text-gray-700">{selectedSession.period_no}</span> ({selectedSession.start_time} - {selectedSession.end_time}) &bull; Room{" "}
                           <span className="font-semibold text-gray-700">{selectedSession.room}</span> &bull; Section{" "}
                           <span className="font-semibold text-gray-700">{selectedSession.section_name}</span>
+                          {selectedSession.lab_group_name && (
+                            <>
+                              {" "}&bull; Lab Group{" "}
+                              <span className="font-bold text-amber-800 bg-amber-100 px-2 py-0.5 rounded border border-amber-200">
+                                {selectedSession.lab_group_name}
+                              </span>
+                            </>
+                          )}
                         </p>
                       </div>
 
@@ -513,6 +576,31 @@ export default function FacultyDashboard() {
                         </div>
                       </div>
                     )}
+
+                    {/* Bulk CSV Actions bar */}
+                    <div className="mt-4 pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3">
+                      <span className="text-xs font-semibold text-gray-500">CSV Bulk Operations:</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={handleDownloadAttendanceTemplate}
+                          disabled={downloadingAttendanceTemplate}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-xs font-semibold transition disabled:opacity-50"
+                        >
+                          {downloadingAttendanceTemplate ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                          Download Attendance Template
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowAttendanceImportModal(true)}
+                          disabled={selectedSession.is_locked || selectedSession.status === "cancelled"}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 text-xs font-bold transition disabled:opacity-50"
+                        >
+                          <Upload className="w-3.5 h-3.5" />
+                          Import Attendance CSV
+                        </button>
+                      </div>
+                    </div>
                   </div>
 
                   {/* Student Roll List */}
@@ -594,15 +682,15 @@ export default function FacultyDashboard() {
         {/* ==================== TAB 2: MARKS ENTRY ==================== */}
         {activeTab === "marks" && (
           <div className="bg-white rounded-2xl border border-gray-200 shadow-xs p-6 sm:p-8">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-6 border-b border-gray-200">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6 pb-6 border-b border-gray-200">
               <div>
                 <h2 className="text-lg font-bold text-gray-900">Internal Marks Entry</h2>
                 <p className="text-xs text-gray-500 mt-0.5">
-                  Enter IT1, IT2, IT3, and Assignment marks. Validation against max marks is trigger-enforced.
+                  Enter IT1, IT2, IT3, and Assignment marks manually or bulk-import via CSV.
                 </p>
               </div>
 
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2.5">
                 <select
                   value={selectedAssignId || ""}
                   onChange={(e) => setSelectedAssignId(Number(e.target.value))}
@@ -614,6 +702,37 @@ export default function FacultyDashboard() {
                     </option>
                   ))}
                 </select>
+
+                <select
+                  value={marksComponent}
+                  onChange={(e) => setMarksComponent(e.target.value as any)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-800 font-medium focus:ring-2 focus:ring-indigo-500 outline-none"
+                >
+                  <option value="IT1">IT1 (Test 1)</option>
+                  <option value="IT2">IT2 (Test 2)</option>
+                  <option value="IT3">IT3 (Test 3)</option>
+                  <option value="ASSIGNMENT">Assignment</option>
+                </select>
+
+                <button
+                  type="button"
+                  onClick={handleDownloadMarksTemplate}
+                  disabled={!selectedAssignId || downloadingMarksTemplate}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-xs font-semibold transition disabled:opacity-50"
+                >
+                  {downloadingMarksTemplate ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
+                  Download Marks Template
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowMarksImportModal(true)}
+                  disabled={!selectedAssignId}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 hover:bg-indigo-100 text-xs font-bold transition disabled:opacity-50"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  Import Marks CSV
+                </button>
 
                 <button
                   onClick={handleSaveMarks}
@@ -868,6 +987,46 @@ export default function FacultyDashboard() {
                 </div>
               </>
             )}
+          </div>
+        )}
+
+        {/* Marks Import Modal */}
+        {showMarksImportModal && selectedAssignId && (
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+            <div className="relative w-full max-w-4xl my-8">
+              <CsvImportWizard
+                entityType="marks"
+                assignmentId={selectedAssignId}
+                component={marksComponent}
+                templateUrl={`/api/import/template/marks?assignment_id=${selectedAssignId}&component=${marksComponent}`}
+                templateFilename={`marks_template_${(currentAssignMeta?.subject_code || "subject").replace(/[^a-zA-Z0-9_-]/g, "_")}_${marksComponent}.csv`}
+                onCancel={() => setShowMarksImportModal(false)}
+                onComplete={() => {
+                  loadMarksForAssignment(selectedAssignId);
+                  setActionSuccess(`Marks for ${marksComponent} imported successfully!`);
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Attendance Import Modal */}
+        {showAttendanceImportModal && selectedSession && (
+          <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+            <div className="relative w-full max-w-4xl my-8">
+              <CsvImportWizard
+                entityType="attendance"
+                sessionId={selectedSession.id}
+                templateUrl={`/api/import/template/attendance?session_id=${selectedSession.id}`}
+                templateFilename={`attendance_template_${selectedDate}_period_${selectedSession.period_no}.csv`}
+                onCancel={() => setShowAttendanceImportModal(false)}
+                onComplete={() => {
+                  selectSession(selectedSession);
+                  loadLectures();
+                  setActionSuccess(`Attendance for lecture period ${selectedSession.period_no} imported successfully!`);
+                }}
+              />
+            </div>
           </div>
         )}
       </main>

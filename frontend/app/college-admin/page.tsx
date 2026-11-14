@@ -14,7 +14,9 @@ import {
   AlertTriangle,
   Loader2,
   Check,
+  FileSpreadsheet,
 } from "lucide-react";
+import CsvImportWizard from "@/components/CsvImportWizard";
 import {
   BarChart,
   Bar,
@@ -26,7 +28,8 @@ import {
 } from "recharts";
 
 export default function CollegeAdminDashboard() {
-  const [activeTab, setActiveTab] = useState<"analytics" | "institution" | "terms" | "settings">("analytics");
+  const [activeTab, setActiveTab] = useState<"analytics" | "institution" | "terms" | "settings" | "import">("analytics");
+  const [importType, setImportType] = useState<"student" | "faculty">("student");
 
   // Analytics state
   const [analytics, setAnalytics] = useState<any[]>([]);
@@ -244,6 +247,17 @@ export default function CollegeAdminDashboard() {
             }`}
           >
             <Settings className="w-4 h-4" /> Threshold Settings
+          </button>
+
+          <button
+            onClick={() => setActiveTab("import")}
+            className={`py-3 px-4 font-semibold text-sm border-b-2 flex items-center gap-2 transition ${
+              activeTab === "import"
+                ? "border-indigo-600 text-indigo-600"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            <FileSpreadsheet className="w-4 h-4" /> CSV Data Import
           </button>
         </div>
 
@@ -521,6 +535,40 @@ export default function CollegeAdminDashboard() {
                 Save Policy
               </button>
             </form>
+          </div>
+        )}
+
+        {/* ==================== TAB 5: CSV DATA IMPORT ==================== */}
+        {activeTab === "import" && (
+          <div className="space-y-6">
+            <div className="flex items-center gap-3 bg-white p-2 rounded-xl border border-gray-200 shadow-2xs max-w-md">
+              <button
+                onClick={() => setImportType("student")}
+                className={`flex-1 py-2 px-4 rounded-lg font-bold text-xs transition ${
+                  importType === "student"
+                    ? "bg-indigo-600 text-white shadow-xs"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Import Students
+              </button>
+              <button
+                onClick={() => setImportType("faculty")}
+                className={`flex-1 py-2 px-4 rounded-lg font-bold text-xs transition ${
+                  importType === "faculty"
+                    ? "bg-indigo-600 text-white shadow-xs"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Import Faculty
+              </button>
+            </div>
+
+            <CsvImportWizard
+              entityType={importType}
+              departments={departments}
+              onComplete={loadAll}
+            />
           </div>
         )}
 

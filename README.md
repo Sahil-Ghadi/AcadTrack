@@ -243,6 +243,10 @@ Total: 71 / 71 passed (100% success rate)
 3. Click **Add Timetable Slot**:
    - Schedule a valid period, then try scheduling another lecture in the same room at the same time to observe the clash warning.
 4. Switch to **Subjects Curriculum tab**: inspect theory vs. lab subjects and max marks.
+5. Switch to **CSV Data Import tab**:
+   - Select **Import Students** or **Import Faculty**.
+   - Upload any custom CSV, inspect auto-detected headers, adjust mappings, preview validation status, and execute bulk import.
+   - If invalid rows occur, download the row-level error CSV report.
 
 ### Role 4: College Admin (`admin@acadtrack.test`)
 1. Sign in as **College Admin**. Redirected to `/college-admin`.
@@ -250,6 +254,8 @@ Total: 71 / 71 passed (100% success rate)
 3. Switch to **Threshold Settings tab**:
    - Update the attendance threshold from `75%` to `80%`.
    - Re-login as Student to see how the eligibility badges immediately update on the fly!
+4. Switch to **CSV Data Import tab**:
+   - Perform institution-wide student and faculty bulk imports with department scope selection.
 
 ---
 
@@ -278,3 +284,141 @@ Total: 71 / 71 passed (100% success rate)
 
 ### Q5: How does the internal marks model handle pending marks vs. zero marks?
 > **Answer**: In AcadTrack, marks are normalized as one row per component (`IT1`, `IT2`, `IT3`, `ASSIGNMENT`) with a surrogate key and a unique constraint `UNIQUE(student_id, subject_assignment_id, component)`. A missing row in the `marks` table represents **"not yet entered / pending"** (rendered as `null` or a placeholder in the UI). When a student scores zero, a row exists with `marks_obtained = 0.00`. In a flat four-column table (`it1, it2, it3, assignment`), distinguishing between an unentered test and a score of 0 requires nullable columns with ambiguous semantics, and adding new evaluation components would require DDL schema alterations. Our normalized design allows flexible component evaluation and clean trigger-based max-mark validation.
+
+---
+
+## 9. Dynamic Student & Faculty CSV Import
+
+AcadTrack includes a shared, dynamic CSV import wizard supporting bulk registration for both **Students** and **Faculty**.
+
+### 1. Key Capabilities
+- **Flexible File Support**: Handles custom column names, arbitrary column orderings, additional irrelevant columns, UTF-8 BOM (`\uFEFF`), quoted text with commas, semicolons (`;`), commas (`,`), and Windows CRLF (`\r\n`).
+- **Conservative Alias Auto-Mapping**: Automatically detects common institutional column aliases (e.g. `PRN`, `URN`, `Seat No` $\rightarrow$ `roll_no`; `Mail ID` $\rightarrow$ `email`; `Div` $\rightarrow$ `section`). Ambiguous or duplicate headers are left unmapped for explicit administrator review.
+- **Interactive Mapping UI**: Allows administrators to inspect auto-detected fields and map or ignore any column before previewing.
+- **Pre-Import Data Validation**: Verifies format, detects duplicate roll numbers and emails within the uploaded file, identifies collisions with existing database records, and validates academic references (departments, sections, lab groups).
+- **Transactional Atomic Execution**: Validated records are inserted inside a single PostgreSQL transaction (`BEGIN ... COMMIT`). If an unexpected database failure occurs, the entire transaction rolls back to prevent orphaned accounts.
+- **Downloadable Error CSV**: Generates an RFC 4180 compliant error spreadsheet highlighting row numbers, original data, and exact error causes for any skipped rows.
+
+### 2. Canonical Fields
+
+| Entity | Required Fields | Optional Fields |
+| :--- | :--- | :--- |
+| **Student** | `roll_no`, `full_name`, `email`, `section`, `admission_year` | `department`, `program`, `batch`, `lab_group` |
+| **Faculty** | `employee_code`, `full_name`, `email`, `department` | `designation` |
+
+### 3. Initial Password Convention
+To eliminate plaintext password circulation in spreadsheets, passwords are deterministically generated and hashed using `bcrypt`:
+- **Student**: `Acad@<RollNo>` (e.g. `Acad@24B-CO-049`)
+- **Faculty**: `Staff@<EmployeeCode>` (e.g. `Staff@EMP101`)
+
+Passwords are never stored in plaintext and are never exposed in error reports or logs.
+
+### 4. Department Scoping & Multi-Tenancy
+- **Department Admin (HOD)**: Strictly scoped to their own department (`req.user.departmentId`). Cannot view or import students or faculty into other departments.
+- **College Admin**: Institution-wide access with department scope selection. All entity references are strictly isolated to `req.user.collegeId`.
+
+### 5. Running the CSV Engine Test Suite
+Run the automated test suite covering RFC 4180 parsing, UTF-8 BOM, semicolon delimiters, alias mapping, duplicate detection, and password policy:
+```bash
+cd backend
+npm test
+```
+
+---
+
+## 10. Laboratory Support, Timetable Concurrency & CSV Export
+
+AcadTrack provides end-to-end support for laboratory sessions, section partitioning by lab groups, interval-based clash prevention, and timetable data export.
+
+### 1. Laboratory & Lab-Group Subject Assignments
+- **Adaptive Allocation**: When assigning subjects to faculty, selecting a laboratory subject (`subject_type = 'lab'`) reveals a Lab Group selection dropdown populated with the active section's lab groups (e.g. `Group A1`, `Group A2`) alongside the option for `Entire Section (All Groups)`.
+- **Theory Protection**: Theory subjects (`subject_type = 'theory'`) disable lab group assignment, ensuring theory courses are consistently assigned to whole sections.
+- **Strict Relationship Validation**: The backend validates that:
+  - Subject, faculty, section, and term belong to the administrator's college and department scope.
+  - Any assigned `lab_group_id` strictly belongs to the specified `section_id`.
+
+### 2. Timetable Interval Clash Prevention & Concurrency Rules
+Timetable conflicts are evaluated using exact time interval overlaps (`ts.start_time < NEW.end_time AND ts.end_time > NEW.start_time`) on the same day and term. Validation is enforced at both the **application level** (returning HTTP 409 Conflict with detailed error messages) and the **database level** (PostgreSQL trigger `trg_timetable_slot_clash_guard`):
+
+| Conflict Rule | Description | Behavior |
+| :--- | :--- | :--- |
+| **Faculty Conflict** | Same faculty assigned to overlapping slots on the same day | **Rejected (409)** |
+| **Room Conflict** | Same room booked for overlapping slots on the same day | **Rejected (409)** |
+| **Lab Group Conflict** | Same lab group scheduled for overlapping sessions | **Rejected (409)** |
+| **Section Conflict** | Two whole-section sessions scheduled for the same section | **Rejected (409)** |
+| **Section vs. Lab Group** | Whole-section session overlapping with a lab group of that section | **Rejected (409)** |
+| **Permitted Concurrency** | Different lab groups of the same section in different rooms with different faculty | **Allowed** |
+
+### 3. Weekly Timetable Matrix & Faculty Attendance
+- **Concurrent Slot Rendering**: Multiple concurrent sessions in the same section and period (such as DBMS Lab for Group A1 in L101 and OS Lab for Group A2 in L102) are rendered simultaneously in the timetable cell, complete with distinctive lab group badges (`Lab A1`, `Lab A2`).
+- **Faculty Attendance Header**: The faculty attendance screen prominently displays the active lab group badge in the session header when taking attendance for a lab session.
+
+### 4. Timetable CSV Export
+- **Export Endpoint**: `GET /api/timetable/slots/export-csv?term_id=<id>` (authorized for `college_admin` and `dept_admin`, automatically scoped to the user's department).
+- **Download Action**: Accessible via the **Export Timetable CSV** button in the Department Admin Timetable header.
+- **Export Format**: Complies with RFC 4180 with a UTF-8 BOM (`\uFEFF`) and dynamic file naming (`timetable_<year>_<term>.csv`).
+- **Exported Columns (15)**:
+  `Subject Code`, `Subject Name`, `Subject Type`, `Faculty Name`, `Faculty Code`, `Department`, `Academic Year`, `Term Type`, `Section`, `Lab Group`, `Day`, `Period`, `Start Time`, `End Time`, `Room`.
+
+### 5. Applying Database Migrations
+To apply the interval clash prevention trigger to an existing database:
+```bash
+psql -U postgres -d acadtrack -f db/migrations/001_laboratory_timetable_clash_guard.sql
+```
+*(Fresh installations initializing with `db/schema.sql` automatically include this trigger.)*
+
+---
+
+## 11. Faculty Bulk CSV Import for Internal Marks & Attendance
+
+AcadTrack extends the shared dynamic CSV import engine to empower Faculty members to bulk-import internal marks and lecture attendance directly from spreadsheets, while preserving strict authorization and database integrity.
+
+### 1. Key Capabilities & Workflow
+- **Reused CSV Engine**: Uses the unified `parseCsv`, `header-mapper`, `csv-serializer`, and `CsvImportWizard` without duplicated logic.
+- **Pre-filled Roster Templates**: Faculty can download pre-populated CSV templates pre-filled with eligible students (`Roll Number`, `Student Name`, empty score/status).
+- **Interactive Mapping & Preview**: Uploaded files can use arbitrary header aliases (e.g. `Score`, `Points` $\rightarrow$ `marks`; `Present/Absent`, `P/A` $\rightarrow$ `status`), review auto-detected mappings, and inspect row-by-row validation before committing.
+- **Strict Non-Overwrite Protection**: Existing scores and attendance marks are never silently overwritten; rows with existing entries are rejected with descriptive messages (`Marks for IT1 already entered for student ... Overwrites are not allowed`).
+- **Downloadable Error CSV**: Any rejected or skipped rows generate an RFC 4180 compliant error CSV file detailing the exact row number and failure cause.
+
+### 2. Faculty Marks CSV Import
+- **Workflow**:
+  1. Faculty selects an assigned subject.
+  2. Faculty selects assessment component (`IT1`, `IT2`, `IT3`, or `ASSIGNMENT`).
+  3. Optionally downloads the pre-filled template with enrolled students.
+  4. Uploads CSV via **Import Marks CSV**.
+  5. Reviews table preview and row-level validation.
+  6. Confirms transactional import (`POST /api/import/execute`).
+- **Validation Rules**:
+  - Validates students belong to the assigned section, lab group, and elective enrollment.
+  - Enforces assessment maximum marks (`max_it_marks` for IT1/IT2/IT3; `max_assignment_marks` for ASSIGNMENT).
+  - Rejects negative, non-numeric, or out-of-range scores.
+  - Rejects duplicate roll numbers in the file.
+  - Rejects student roll numbers already scored for that component.
+  - Verifies faculty ownership of the subject assignment.
+
+### 3. Faculty Attendance CSV Import
+- **Workflow**:
+  1. Faculty selects a scheduled lecture from **Today's Lectures**.
+  2. Optionally downloads pre-filled attendance template (`/api/import/template/attendance?session_id=<id>`).
+  3. Uploads CSV via **Import Attendance CSV**.
+  4. Reviews preview with student status normalization.
+  5. Confirms transactional import (`POST /api/import/execute`).
+- **Validation Rules**:
+  - Supports status aliases: Present (`P`, `Present`, `1`) and Absent (`A`, `Absent`, `0`). Any other status is flagged as an invalid status error.
+  - Validates student enrollment in the session's section and lab group.
+  - Rejects locked sessions (HTTP 409 Conflict) and cancelled sessions (HTTP 422 Unprocessable Entity).
+  - Rejects duplicate roll numbers in the file.
+  - Rejects students with existing attendance entries for the session to prevent accidental overwrites.
+  - Verifies faculty ownership of the lecture session.
+
+### 4. API Endpoints
+
+| Method | Endpoint | Authorized Roles | Description |
+| :--- | :--- | :--- | :--- |
+| `POST` | `/api/import/preview` | `college_admin`, `dept_admin`, `faculty` | Parses and validates CSV rows without database writes |
+| `POST` | `/api/import/execute` | `college_admin`, `dept_admin`, `faculty` | Atomically executes import inside a PostgreSQL transaction |
+| `GET` | `/api/import/template/marks` | `college_admin`, `dept_admin`, `faculty` | Generates pre-filled CSV template for subject assignment & assessment |
+| `GET` | `/api/import/template/attendance` | `college_admin`, `dept_admin`, `faculty` | Generates pre-filled CSV template for lecture session roster |
+
+
+

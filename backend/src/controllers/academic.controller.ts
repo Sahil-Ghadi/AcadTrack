@@ -35,7 +35,7 @@ export async function listStudents(req: Request, res: Response) {
 export async function createStudent(req: Request, res: Response) {
   const parsed = createStudentUserSchema.safeParse(req.body);
   if (!parsed.success) throw parsed.error;
-  const row = await academicService.createStudent(collegeId(req), parsed.data);
+  const row = await academicService.createStudent(collegeId(req), parsed.data, scopedDeptId(req));
   res.status(201).json(row);
 }
 
@@ -138,7 +138,11 @@ export async function listSubjectAssignments(req: Request, res: Response) {
 export async function createSubjectAssignment(req: Request, res: Response) {
   const parsed = createSubjectAssignmentSchema.safeParse(req.body);
   if (!parsed.success) throw parsed.error;
-  const row = await academicService.createSubjectAssignment(collegeId(req), parsed.data);
+  const row = await academicService.createSubjectAssignment(
+    collegeId(req),
+    parsed.data,
+    scopedDeptId(req),
+  );
   res.status(201).json(row);
 }
 

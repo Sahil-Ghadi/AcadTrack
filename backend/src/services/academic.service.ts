@@ -42,6 +42,7 @@ export async function createStudent(
     full_name: string;
     admission_year: number;
   },
+  departmentIdScope?: number,
 ) {
   const client = await pool.connect();
   try {
@@ -61,6 +62,10 @@ export async function createStudent(
       throw Object.assign(new Error("Section not found in this college"), { status: 404 });
     }
     const departmentId = secRes.rows[0].department_id;
+
+    if (departmentIdScope && departmentId !== departmentIdScope) {
+      throw Object.assign(new Error("Forbidden: can only create students in your own department"), { status: 403 });
+    }
 
     const passwordHash = await bcrypt.hash(data.password, 10);
 
@@ -320,16 +325,79 @@ export async function createSubjectAssignment(
     lab_group_id?: number | null;
     term_id: number;
   },
+  departmentIdScope?: number,
 ) {
-  // Validate subject belongs to this college
+  // 1. Validate subject belongs to this college (and scoped department)
   const subjCheck = await pool.query(
-    `SELECT s.id FROM subject s
+    `SELECT s.id, s.department_id, s.subject_type FROM subject s
        JOIN department d ON d.id = s.department_id
       WHERE s.id = $1 AND d.college_id = $2`,
     [data.subject_id, collegeId],
   );
   if (subjCheck.rows.length === 0) {
     throw Object.assign(new Error("Subject not found in this college"), { status: 404 });
+  }
+  const subject = subjCheck.rows[0];
+  if (departmentIdScope && subject.department_id !== departmentIdScope) {
+    throw Object.assign(new Error("Cannot assign subject from another department"), { status: 403 });
+  }
+
+  // 2. Validate faculty belongs to this college (and scoped department)
+  const facultyCheck = await pool.query(
+    `SELECT f.id, f.department_id FROM faculty f
+       JOIN department d ON d.id = f.department_id
+      WHERE f.id = $1 AND d.college_id = $2`,
+    [data.faculty_id, collegeId],
+  );
+  if (facultyCheck.rows.length === 0) {
+    throw Object.assign(new Error("Faculty not found in this college"), { status: 404 });
+  }
+  if (departmentIdScope && facultyCheck.rows[0].department_id !== departmentIdScope) {
+    throw Object.assign(new Error("Cannot assign faculty from another department"), { status: 403 });
+  }
+
+  // 3. Validate section belongs to this college (and scoped department)
+  const secCheck = await pool.query(
+    `SELECT sec.id, p.department_id FROM section sec
+       JOIN batch b ON b.id = sec.batch_id
+       JOIN program p ON p.id = b.program_id
+       JOIN department d ON d.id = p.department_id
+      WHERE sec.id = $1 AND d.college_id = $2`,
+    [data.section_id, collegeId],
+  );
+  if (secCheck.rows.length === 0) {
+    throw Object.assign(new Error("Section not found in this college"), { status: 404 });
+  }
+  if (departmentIdScope && secCheck.rows[0].department_id !== departmentIdScope) {
+    throw Object.assign(new Error("Cannot assign section from another department"), { status: 403 });
+  }
+
+  // 4. Validate academic term belongs to this college
+  const termCheck = await pool.query(
+    `SELECT id FROM academic_term WHERE id = $1 AND college_id = $2`,
+    [data.term_id, collegeId],
+  );
+  if (termCheck.rows.length === 0) {
+    throw Object.assign(new Error("Academic term not found in this college"), { status: 404 });
+  }
+
+  // 5. Validate lab group if provided
+  if (data.lab_group_id) {
+    if (subject.subject_type !== "lab") {
+      throw Object.assign(new Error("Cannot assign a lab group to a theory subject"), { status: 400 });
+    }
+    const lgCheck = await pool.query(
+      `SELECT lg.id FROM lab_group lg
+         JOIN section sec  ON sec.id = lg.section_id
+         JOIN batch b      ON b.id = sec.batch_id
+         JOIN program p    ON p.id = b.program_id
+         JOIN department d ON d.id = p.department_id
+        WHERE lg.id = $1 AND lg.section_id = $2 AND d.college_id = $3`,
+      [data.lab_group_id, data.section_id, collegeId],
+    );
+    if (lgCheck.rows.length === 0) {
+      throw Object.assign(new Error("Selected lab group does not belong to the selected section"), { status: 400 });
+    }
   }
 
   const { rows } = await pool.query(

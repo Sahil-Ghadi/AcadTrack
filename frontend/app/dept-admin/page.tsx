@@ -14,10 +14,14 @@ import {
   Layers,
   Loader2,
   Trash2,
+  FileSpreadsheet,
+  Download,
 } from "lucide-react";
+import CsvImportWizard from "@/components/CsvImportWizard";
 
 export default function DeptAdminDashboard() {
-  const [activeTab, setActiveTab] = useState<"timetable" | "subjects" | "assignments">("timetable");
+  const [activeTab, setActiveTab] = useState<"timetable" | "subjects" | "assignments" | "import">("timetable");
+  const [importType, setImportType] = useState<"student" | "faculty">("student");
 
   // Timetable state
   const [slots, setSlots] = useState<any[]>([]);
@@ -52,10 +56,13 @@ export default function DeptAdminDashboard() {
   const [sections, setSections] = useState<any[]>([]);
   const [currentTerm, setCurrentTerm] = useState<any | null>(null);
   const [showAddAssign, setShowAddAssign] = useState(false);
+  const [sectionLabGroups, setSectionLabGroups] = useState<any[]>([]);
+  const [exportingCsv, setExportingCsv] = useState(false);
   const [assignForm, setAssignForm] = useState({
     subject_id: "",
     faculty_id: "",
     section_id: "",
+    lab_group_id: "",
   });
 
   // Notification banners
@@ -65,6 +72,19 @@ export default function DeptAdminDashboard() {
   useEffect(() => {
     loadAllData();
   }, []);
+
+  async function loadSectionLabGroups(sectionId: string | number) {
+    if (!sectionId) {
+      setSectionLabGroups([]);
+      return;
+    }
+    try {
+      const lgs = await apiFetch<any[]>(`/api/institution/lab-groups?section_id=${sectionId}`);
+      setSectionLabGroups(lgs);
+    } catch {
+      setSectionLabGroups([]);
+    }
+  }
 
   async function loadAllData() {
     setLoadingSlots(true);
@@ -94,7 +114,9 @@ export default function DeptAdminDashboard() {
           subject_id: String(subRes[0].id),
           faculty_id: String(fRes[0].id),
           section_id: String(secRes[0].id),
+          lab_group_id: "",
         });
+        loadSectionLabGroups(secRes[0].id);
       }
     } catch {}
     finally {
@@ -188,6 +210,7 @@ export default function DeptAdminDashboard() {
           subject_id: Number(assignForm.subject_id),
           faculty_id: Number(assignForm.faculty_id),
           section_id: Number(assignForm.section_id),
+          lab_group_id: assignForm.lab_group_id ? Number(assignForm.lab_group_id) : null,
           term_id: currentTerm.id,
         }),
       });
@@ -198,6 +221,48 @@ export default function DeptAdminDashboard() {
       setAssignments(aRes);
     } catch (err: any) {
       setBannerError(err.message || "Failed to assign subject");
+    }
+  }
+
+  // --- Export Timetable CSV ---
+  async function handleExportCsv() {
+    if (!currentTerm) {
+      setBannerError("No active academic term selected for timetable export");
+      return;
+    }
+    setExportingCsv(true);
+    setBannerError(null);
+    try {
+      const token = typeof window !== "undefined" ? localStorage.getItem("acadtrack_token") : null;
+      const query = new URLSearchParams({
+        term_id: String(currentTerm.id),
+      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/api/timetable/slots/export-csv?${query.toString()}`,
+        {
+          headers: {
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        },
+      );
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => ({ message: "Export failed" }));
+        throw new Error(errJson.message || `Export failed with status ${res.status}`);
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `timetable_${currentTerm.academic_year}_${currentTerm.term_type}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      setBannerSuccess("Timetable CSV downloaded successfully!");
+    } catch (err: any) {
+      setBannerError(err.message || "Failed to download timetable CSV");
+    } finally {
+      setExportingCsv(false);
     }
   }
 
@@ -229,12 +294,23 @@ export default function DeptAdminDashboard() {
 
           <div className="flex items-center gap-2">
             {activeTab === "timetable" && (
-              <button
-                onClick={() => setShowAddSlot(true)}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
-              >
-                <Plus className="w-4 h-4" /> Add Timetable Slot
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleExportCsv}
+                  disabled={exportingCsv}
+                  className="px-3.5 py-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-2xs disabled:opacity-50"
+                  title="Export timetable to RFC 4180 CSV with UTF-8 BOM"
+                >
+                  <Download className="w-4 h-4 text-gray-500" />
+                  {exportingCsv ? "Exporting..." : "Export Timetable CSV"}
+                </button>
+                <button
+                  onClick={() => setShowAddSlot(true)}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
+                >
+                  <Plus className="w-4 h-4" /> Add Timetable Slot
+                </button>
+              </div>
             )}
 
             {activeTab === "subjects" && (
@@ -248,7 +324,12 @@ export default function DeptAdminDashboard() {
 
             {activeTab === "assignments" && (
               <button
-                onClick={() => setShowAddAssign(true)}
+                onClick={() => {
+                  if (assignForm.section_id) {
+                    loadSectionLabGroups(assignForm.section_id);
+                  }
+                  setShowAddAssign(true);
+                }}
                 className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
               >
                 <Plus className="w-4 h-4" /> Assign Faculty
@@ -291,6 +372,17 @@ export default function DeptAdminDashboard() {
           >
             <Users className="w-4 h-4" /> Faculty Assignments ({assignments.length})
           </button>
+
+          <button
+            onClick={() => setActiveTab("import")}
+            className={`py-3 px-4 font-semibold text-sm border-b-2 flex items-center gap-2 transition ${
+              activeTab === "import"
+                ? "border-indigo-600 text-indigo-600"
+                : "border-transparent text-gray-500 hover:text-gray-700"
+            }`}
+          >
+            <FileSpreadsheet className="w-4 h-4" /> CSV Data Import
+          </button>
         </div>
 
         {/* Notifications */}
@@ -317,7 +409,7 @@ export default function DeptAdminDashboard() {
               <div>
                 <h2 className="text-base font-bold text-gray-900">Weekly Department Timetable</h2>
                 <p className="text-xs text-gray-500">
-                  Clashes for rooms and faculty across the term are enforced by PostgreSQL UNIQUE constraints.
+                  Interval clash prevention enforces faculty, room, section, and lab-group constraints across concurrent sessions.
                 </p>
               </div>
             </div>
@@ -349,31 +441,45 @@ export default function DeptAdminDashboard() {
                           {d.name}
                         </td>
                         {periods.map((p) => {
-                          const slot = slots.find((s) => s.day_of_week === d.num && s.period_no === p);
+                          const cellSlots = slots.filter((s) => s.day_of_week === d.num && s.period_no === p);
                           return (
                             <td
                               key={p}
-                              className={`border-r border-gray-100 p-2.5 text-center min-w-[140px] align-top ${
-                                slot ? "bg-indigo-50/30" : "bg-white"
+                              className={`border-r border-gray-100 p-2 text-center min-w-[155px] align-top ${
+                                cellSlots.length > 0 ? "bg-indigo-50/20" : "bg-white"
                               }`}
                             >
-                              {slot ? (
-                                <div className="p-2 rounded-lg bg-white border border-indigo-100 shadow-2xs text-left relative group">
-                                  <div className="flex items-center justify-between">
-                                    <span className="font-bold text-xs text-indigo-900">{slot.subject_code}</span>
-                                    <button
-                                      onClick={() => handleDeleteSlot(slot.id)}
-                                      className="text-gray-300 hover:text-red-600 transition"
-                                      title="Delete slot"
+                              {cellSlots.length > 0 ? (
+                                <div className="space-y-2">
+                                  {cellSlots.map((slot) => (
+                                    <div
+                                      key={slot.id}
+                                      className="p-2.5 rounded-lg bg-white border border-indigo-100 shadow-2xs text-left relative group hover:border-indigo-300 transition"
                                     >
-                                      <Trash2 className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                  <p className="text-[11px] font-medium text-gray-700 truncate mt-0.5">{slot.subject_name}</p>
-                                  <p className="text-[10px] text-gray-500 mt-1">
-                                    Room <strong>{slot.room}</strong> &bull; Sec {slot.section_name}
-                                  </p>
-                                  <p className="text-[10px] text-indigo-600 truncate">{slot.faculty_name}</p>
+                                      <div className="flex items-center justify-between gap-1">
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                          <span className="font-bold text-xs text-indigo-900">{slot.subject_code}</span>
+                                          {slot.lab_group_name && (
+                                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                              Lab {slot.lab_group_name}
+                                            </span>
+                                          )}
+                                        </div>
+                                        <button
+                                          onClick={() => handleDeleteSlot(slot.id)}
+                                          className="text-gray-300 hover:text-red-600 transition"
+                                          title="Delete slot"
+                                        >
+                                          <Trash2 className="w-3 h-3" />
+                                        </button>
+                                      </div>
+                                      <p className="text-[11px] font-medium text-gray-700 truncate mt-0.5">{slot.subject_name}</p>
+                                      <p className="text-[10px] text-gray-500 mt-1">
+                                        Room <strong>{slot.room}</strong> &bull; Sec {slot.section_name}
+                                      </p>
+                                      <p className="text-[10px] text-indigo-600 truncate">{slot.faculty_name}</p>
+                                    </div>
+                                  ))}
                                 </div>
                               ) : (
                                 <span className="text-gray-200 text-xs">-</span>
@@ -477,6 +583,39 @@ export default function DeptAdminDashboard() {
           </div>
         )}
 
+        {/* ==================== TAB 4: CSV DATA IMPORT ==================== */}
+        {activeTab === "import" && (
+          <div className="space-y-6">
+            <div className="flex items-center gap-3 bg-white p-2 rounded-xl border border-gray-200 shadow-2xs max-w-md">
+              <button
+                onClick={() => setImportType("student")}
+                className={`flex-1 py-2 px-4 rounded-lg font-bold text-xs transition ${
+                  importType === "student"
+                    ? "bg-indigo-600 text-white shadow-xs"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Import Students
+              </button>
+              <button
+                onClick={() => setImportType("faculty")}
+                className={`flex-1 py-2 px-4 rounded-lg font-bold text-xs transition ${
+                  importType === "faculty"
+                    ? "bg-indigo-600 text-white shadow-xs"
+                    : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                Import Faculty
+              </button>
+            </div>
+
+            <CsvImportWizard
+              entityType={importType}
+              onComplete={loadAllData}
+            />
+          </div>
+        )}
+
         {/* Modal: Add Timetable Slot */}
         {showAddSlot && (
           <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
@@ -493,7 +632,8 @@ export default function DeptAdminDashboard() {
                   >
                     {assignments.map((a) => (
                       <option key={a.id} value={a.id}>
-                        {a.subject_code} ({a.faculty_name} - Sec {a.section_name})
+                        {a.subject_code} ({a.faculty_name} - Sec {a.section_name}
+                        {a.lab_group_name ? ` - Group ${a.lab_group_name}` : ""})
                       </option>
                     ))}
                   </select>
@@ -714,13 +854,21 @@ export default function DeptAdminDashboard() {
                   <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Subject</label>
                   <select
                     value={assignForm.subject_id}
-                    onChange={(e) => setAssignForm({ ...assignForm, subject_id: e.target.value })}
+                    onChange={(e) => {
+                      const newSubId = e.target.value;
+                      const sub = subjects.find((s) => String(s.id) === newSubId);
+                      setAssignForm((prev) => ({
+                        ...prev,
+                        subject_id: newSubId,
+                        lab_group_id: sub?.subject_type === "theory" ? "" : prev.lab_group_id,
+                      }));
+                    }}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-800"
                   >
                     {subjects.map((s) => (
                       <option key={s.id} value={s.id}>
-                        {s.code} - {s.name}
+                        {s.code} - {s.name} ({s.subject_type.toUpperCase()})
                       </option>
                     ))}
                   </select>
@@ -746,7 +894,11 @@ export default function DeptAdminDashboard() {
                   <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Section</label>
                   <select
                     value={assignForm.section_id}
-                    onChange={(e) => setAssignForm({ ...assignForm, section_id: e.target.value })}
+                    onChange={(e) => {
+                      const newSecId = e.target.value;
+                      setAssignForm({ ...assignForm, section_id: newSecId, lab_group_id: "" });
+                      loadSectionLabGroups(newSecId);
+                    }}
                     required
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-800"
                   >
@@ -757,6 +909,48 @@ export default function DeptAdminDashboard() {
                     ))}
                   </select>
                 </div>
+
+                {/* Lab Group Selection */}
+                {(() => {
+                  const currentSub = subjects.find((s) => String(s.id) === String(assignForm.subject_id));
+                  const isLab = currentSub?.subject_type === "lab";
+                  if (isLab) {
+                    return (
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
+                          Lab Group Assignment
+                        </label>
+                        <select
+                          value={assignForm.lab_group_id}
+                          onChange={(e) => setAssignForm({ ...assignForm, lab_group_id: e.target.value })}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-800"
+                        >
+                          <option value="">Entire Section (All Groups)</option>
+                          {sectionLabGroups.map((lg) => (
+                            <option key={lg.id} value={lg.id}>
+                              Group {lg.name}
+                            </option>
+                          ))}
+                        </select>
+                        <p className="text-[11px] text-gray-500 mt-1">
+                          {sectionLabGroups.length === 0
+                            ? "No lab groups configured for this section. Assignment will apply to the entire section."
+                            : "Select a specific lab group for concurrent scheduling, or assign to the entire section."}
+                        </p>
+                      </div>
+                    );
+                  }
+                  return (
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">
+                        Lab Group Assignment
+                      </label>
+                      <div className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-500">
+                        Not applicable (Theory subjects apply to the entire section)
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 <div className="flex justify-end gap-2 pt-4">
                   <button

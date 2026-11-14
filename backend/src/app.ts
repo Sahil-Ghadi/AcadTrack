@@ -7,6 +7,7 @@ import timetableRoutes from "./routes/timetable.routes";
 import attendanceRoutes from "./routes/attendance.routes";
 import marksRoutes from "./routes/marks.routes";
 import reportsRoutes from "./routes/reports.routes";
+import importRoutes from "./routes/import.routes";
 import { errorHandler } from "./middleware/error.middleware";
 
 const app = express();
@@ -32,6 +33,7 @@ app.use("/api/timetable", timetableRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/marks", marksRoutes);
 app.use("/api/reports", reportsRoutes);
+app.use("/api/import", importRoutes);
 
 // Central error handler (must be last)
 app.use(errorHandler);
