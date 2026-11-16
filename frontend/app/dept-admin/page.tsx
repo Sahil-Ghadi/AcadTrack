@@ -24,7 +24,8 @@ import CsvImportWizard from "@/components/CsvImportWizard";
 
 export default function DeptAdminDashboard() {
   const [activeTab, setActiveTab] = useState<"timetable" | "subjects" | "assignments" | "import">("timetable");
-  const [importType, setImportType] = useState<"student" | "faculty">("student");
+  const [importType, setImportType] = useState<"student" | "faculty" | "timetable">("student");
+  const [showImportTimetableModal, setShowImportTimetableModal] = useState(false);
 
   // Timetable state
   const [slots, setSlots] = useState<any[]>([]);
@@ -397,6 +398,14 @@ export default function DeptAdminDashboard() {
                 </button>
                 <button
                   type="button"
+                  onClick={() => setShowImportTimetableModal(true)}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#F0E5F7] border border-[#EAE2EA] text-[#55368F] hover:bg-[#EAE2EA] text-xs font-bold shadow-2xs transition"
+                >
+                  <FileSpreadsheet className="w-4 h-4 text-[#7150B5]" />
+                  <span>Import Timetable CSV</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => setShowAddSlot(true)}
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#7150B5] hover:bg-[#55368F] text-white text-xs font-bold shadow-xs transition"
                 >
@@ -757,7 +766,7 @@ export default function DeptAdminDashboard() {
               <div>
                 <h2 className="text-xl font-bold text-[#29232F]">Departmental CSV Data Import</h2>
                 <p className="text-xs text-[#777080] mt-1">
-                  Bulk-import verified student rosters and faculty records strictly scoped to Computer Engineering.
+                  Bulk-import verified student rosters, faculty records, or weekly timetable schedules strictly scoped to Computer Engineering.
                 </p>
               </div>
 
@@ -785,13 +794,36 @@ export default function DeptAdminDashboard() {
                 >
                   Import Faculty
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setImportType("timetable")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    importType === "timetable"
+                      ? "bg-[#7150B5] text-white shadow-2xs"
+                      : "text-[#777080] hover:text-[#29232F]"
+                  }`}
+                >
+                  Import Timetable
+                </button>
               </div>
             </div>
 
             {/* Department-Scoped Dynamic CSV Import Wizard */}
             <CsvImportWizard
+              key={importType}
               entityType={importType}
               departmentId={user?.departmentId || undefined}
+              termId={currentTerm?.id}
+              templateUrl={
+                importType === "timetable"
+                  ? `/api/import/template/timetable?department_id=${user?.departmentId || ""}`
+                  : undefined
+              }
+              templateFilename={
+                importType === "timetable"
+                  ? "timetable_template.csv"
+                  : undefined
+              }
               onComplete={() => {
                 loadAllData();
                 setBannerSuccess(`Successfully imported ${importType} records into department!`);
@@ -1127,6 +1159,26 @@ export default function DeptAdminDashboard() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+      {/* ================= IMPORT TIMETABLE CSV MODAL ================= */}
+      {showImportTimetableModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="relative w-full max-w-4xl my-8">
+            <CsvImportWizard
+              entityType="timetable"
+              departmentId={user?.departmentId || undefined}
+              termId={currentTerm?.id}
+              templateUrl={`/api/import/template/timetable?department_id=${user?.departmentId || ""}`}
+              templateFilename="timetable_template.csv"
+              onCancel={() => setShowImportTimetableModal(false)}
+              onComplete={() => {
+                loadAllData();
+                setShowImportTimetableModal(false);
+                setBannerSuccess("Timetable CSV imported and validated successfully!");
+              }}
+            />
           </div>
         </div>
       )}

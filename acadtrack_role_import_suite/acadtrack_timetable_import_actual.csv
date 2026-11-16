@@ -1,0 +1,8 @@
+﻿subject_code,faculty_employee_code,section,lab_group,day_of_week,start_time,end_time,room
+CO503,EMP103,A,,Monday,11:15,12:15,R305
+CO501,EMP101,A,,Tuesday,11:15,12:15,R305
+CO502,EMP102,A,,Wednesday,09:00,10:00,R305
+CO503,EMP103,A,,Wednesday,11:15,12:15,R305
+CO501,EMP101,A,,Thursday,11:15,12:15,R305
+CO502,EMP102,A,,Friday,09:00,10:00,R204
+CO503,EMP103,A,,Friday,10:00,11:00,R204

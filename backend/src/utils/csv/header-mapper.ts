@@ -1,4 +1,4 @@
-export type EntityType = "student" | "faculty" | "marks" | "attendance";
+export type EntityType = "student" | "faculty" | "marks" | "attendance" | "timetable";
 
 export interface CanonicalField {
   key: string;
@@ -214,6 +214,101 @@ export const ATTENDANCE_FIELDS: CanonicalField[] = [
   },
 ];
 
+export const TIMETABLE_FIELDS: CanonicalField[] = [
+  {
+    key: "subject_code",
+    label: "Subject Code",
+    required: true,
+    description: "Course / Subject code (e.g. CO501, CS301)",
+    aliases: [
+      "subject_code", "subject", "course_code", "sub_code", "course", "subject code",
+    ],
+  },
+  {
+    key: "faculty_code",
+    label: "Faculty Employee Code",
+    required: true,
+    description: "Faculty employee code or ID (e.g. EMP101, FAC001)",
+    aliases: [
+      "faculty_code", "faculty_employee_code", "employee_code", "faculty_id", "emp_code",
+      "faculty code", "teacher_code", "staff_code", "faculty",
+    ],
+  },
+  {
+    key: "section",
+    label: "Section",
+    required: true,
+    description: "Section name (e.g. A, B)",
+    aliases: [
+      "section", "sec", "division", "div", "class_section", "section_name", "section",
+    ],
+  },
+  {
+    key: "lab_group",
+    label: "Lab Group",
+    required: false,
+    description: "Practical / Lab group name (e.g. A1, A2) - required for lab subjects",
+    aliases: [
+      "lab_group", "labgroup", "practical_group", "group", "lab_group_name", "lab group",
+      "batch_group", "practical_batch",
+    ],
+  },
+  {
+    key: "day_of_week",
+    label: "Day of Week",
+    required: true,
+    description: "Day name (Monday-Saturday) or number (1-6)",
+    aliases: [
+      "day_of_week", "day", "weekday", "day of week", "day_name",
+    ],
+  },
+  {
+    key: "period_no",
+    label: "Period Number",
+    required: false,
+    description: "Period number 1 to 6 (can be derived from Start Time)",
+    aliases: [
+      "period_no", "period", "period_number", "slot", "period / start time",
+    ],
+  },
+  {
+    key: "start_time",
+    label: "Start Time",
+    required: false,
+    description: "Slot start time in HH:MM format (e.g. 09:00)",
+    aliases: [
+      "start_time", "start", "from_time", "start time", "start_at",
+    ],
+  },
+  {
+    key: "end_time",
+    label: "End Time",
+    required: false,
+    description: "Slot end time in HH:MM format (e.g. 10:00)",
+    aliases: [
+      "end_time", "end", "to_time", "end time", "finish_time", "end_at",
+    ],
+  },
+  {
+    key: "room",
+    label: "Room / Hall / Lab",
+    required: true,
+    description: "Room identifier or venue (e.g. LH-101, R204, Lab 2)",
+    aliases: [
+      "room", "classroom", "hall", "lab", "room_no", "room_number", "venue", "location",
+    ],
+  },
+  {
+    key: "academic_term",
+    label: "Academic Term",
+    required: false,
+    description: "Academic year / term (e.g. 2024-2025, even, or current active term)",
+    aliases: [
+      "academic_term", "term", "academic_year", "term_type", "academic term", "term_name",
+    ],
+  },
+];
+
 export function getCanonicalFields(entityType: EntityType): CanonicalField[] {
   switch (entityType) {
     case "student":
@@ -224,6 +319,8 @@ export function getCanonicalFields(entityType: EntityType): CanonicalField[] {
       return MARKS_FIELDS;
     case "attendance":
       return ATTENDANCE_FIELDS;
+    case "timetable":
+      return TIMETABLE_FIELDS;
   }
 }
 

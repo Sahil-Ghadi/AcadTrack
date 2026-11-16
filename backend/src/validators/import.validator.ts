@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const importPreviewSchema = z.object({
-  entity_type: z.enum(["student", "faculty", "marks", "attendance"]),
+  entity_type: z.enum(["student", "faculty", "marks", "attendance", "timetable"]),
   department_id: z.coerce.number().int().positive().optional(),
   program_id: z.coerce.number().int().positive().optional(),
   batch_id: z.coerce.number().int().positive().optional(),
@@ -9,6 +9,7 @@ export const importPreviewSchema = z.object({
   assignment_id: z.coerce.number().int().positive().optional(),
   component: z.enum(["IT1", "IT2", "IT3", "ASSIGNMENT"]).optional(),
   session_id: z.coerce.number().int().positive().optional(),
+  term_id: z.coerce.number().int().positive().optional(),
   mappings: z
     .string()
     .optional()
@@ -23,7 +24,7 @@ export const importPreviewSchema = z.object({
 });
 
 export const importExecuteSchema = z.object({
-  entity_type: z.enum(["student", "faculty", "marks", "attendance"]),
+  entity_type: z.enum(["student", "faculty", "marks", "attendance", "timetable"]),
   department_id: z.coerce.number().int().positive().optional(),
   program_id: z.coerce.number().int().positive().optional(),
   batch_id: z.coerce.number().int().positive().optional(),
@@ -31,6 +32,7 @@ export const importExecuteSchema = z.object({
   assignment_id: z.coerce.number().int().positive().optional(),
   component: z.enum(["IT1", "IT2", "IT3", "ASSIGNMENT"]).optional(),
   session_id: z.coerce.number().int().positive().optional(),
+  term_id: z.coerce.number().int().positive().optional(),
   skip_errors: z
     .union([z.boolean(), z.string()])
     .optional()

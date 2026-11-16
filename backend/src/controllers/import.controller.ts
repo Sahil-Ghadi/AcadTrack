@@ -49,6 +49,7 @@ export async function previewImport(req: Request, res: Response): Promise<void> 
       assignmentId: parsed.data.assignment_id,
       component: parsed.data.component,
       sessionId: parsed.data.session_id,
+      termId: parsed.data.term_id,
       userId: req.user!.id,
       userRole: req.user!.role,
     },
@@ -86,6 +87,7 @@ export async function executeImport(req: Request, res: Response): Promise<void> 
       assignmentId: parsed.data.assignment_id,
       component: parsed.data.component,
       sessionId: parsed.data.session_id,
+      termId: parsed.data.term_id,
       userId: req.user!.id,
       userRole: req.user!.role,
       skipErrors: parsed.data.skip_errors,
@@ -128,3 +130,20 @@ export async function downloadAttendanceTemplate(req: Request, res: Response): P
   res.send(csv);
 }
 
+export async function downloadTimetableTemplate(req: Request, res: Response): Promise<void> {
+  const departmentId = resolveDepartmentScope(
+    req,
+    req.query.department_id ? Number(req.query.department_id) : undefined,
+  );
+  const termId = req.query.term_id ? Number(req.query.term_id) : undefined;
+
+  const { csv, filename } = await importService.generateTimetableTemplate(
+    getCollegeId(req),
+    departmentId,
+    termId,
+  );
+
+  res.setHeader("Content-Type", "text/csv; charset=utf-8");
+  res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+  res.send(csv);
+}

@@ -17,6 +17,7 @@ export interface ImportContext {
   assignmentId?: number;
   component?: "IT1" | "IT2" | "IT3" | "ASSIGNMENT";
   sessionId?: number;
+  termId?: number;
   userId?: number;
   userRole?: string;
 }
@@ -827,6 +828,516 @@ export async function generateAttendanceTemplate(
   return { csv, filename };
 }
 
+export interface TimetableSlotItem {
+  id?: number;
+  term_id: number;
+  day_of_week: number;
+  period_no: number;
+  start_time: string;
+  end_time: string;
+  room: string;
+  faculty_id: number;
+  section_id: number;
+  lab_group_id: number | null;
+  faculty_name: string;
+  subject_code: string;
+  section_name: string;
+  lab_group_name: string | null;
+}
+
+export interface TimetableCache {
+  collegeId: number;
+  departmentId: number;
+  departmentName: string;
+  departmentCode: string;
+  currentTerm: {
+    id: number;
+    academic_year: string;
+    term_type: string;
+    is_current: boolean;
+  };
+  terms: Array<{
+    id: number;
+    academic_year: string;
+    term_type: string;
+    is_current: boolean;
+  }>;
+  subjects: Array<{
+    id: number;
+    code: string;
+    name: string;
+    subject_type: "theory" | "lab";
+    is_elective: boolean;
+    department_id: number;
+  }>;
+  faculty: Array<{
+    id: number;
+    employee_code: string;
+    full_name: string;
+    email: string;
+    department_id: number;
+  }>;
+  sections: Array<{
+    id: number;
+    name: string;
+    batch_id: number;
+    department_id: number;
+  }>;
+  labGroups: Array<{
+    id: number;
+    section_id: number;
+    name: string;
+  }>;
+  existingSlots: TimetableSlotItem[];
+}
+
+const DAY_MAP: Record<string, number> = {
+  "1": 1, "monday": 1, "mon": 1,
+  "2": 2, "tuesday": 2, "tue": 2, "tues": 2,
+  "3": 3, "wednesday": 3, "wed": 3,
+  "4": 4, "thursday": 4, "thu": 4, "thur": 4, "thurs": 4,
+  "5": 5, "friday": 5, "fri": 5,
+  "6": 6, "saturday": 6, "sat": 6,
+  "7": 7, "sunday": 7, "sun": 7,
+};
+
+const PERIOD_TIMES: Record<number, { start: string; end: string }> = {
+  1: { start: "09:00", end: "10:00" },
+  2: { start: "10:00", end: "11:00" },
+  3: { start: "11:15", end: "12:15" },
+  4: { start: "12:15", end: "13:15" },
+  5: { start: "14:00", end: "15:00" },
+  6: { start: "15:00", end: "16:00" },
+};
+
+export async function loadTimetableContext(
+  collegeId: number,
+  departmentId?: number,
+  termId?: number,
+): Promise<TimetableCache> {
+  if (!departmentId) {
+    throw Object.assign(new Error("department_id is required for timetable import"), { status: 400 });
+  }
+
+  const deptRes = await pool.query(
+    `SELECT id, name, code FROM department WHERE id = $1 AND college_id = $2`,
+    [departmentId, collegeId],
+  );
+  if (deptRes.rows.length === 0) {
+    throw Object.assign(new Error("Department not found in this college"), { status: 404 });
+  }
+  const dept = deptRes.rows[0];
+
+  const termsRes = await pool.query(
+    `SELECT id, academic_year, term_type, is_current
+       FROM academic_term
+      WHERE college_id = $1
+      ORDER BY is_current DESC, start_date DESC`,
+    [collegeId],
+  );
+  if (termsRes.rows.length === 0) {
+    throw Object.assign(new Error("No academic terms configured for this college"), { status: 404 });
+  }
+
+  const terms = termsRes.rows;
+  const currentTerm = termId
+    ? terms.find((t) => t.id === termId) || terms[0]
+    : terms.find((t) => t.is_current) || terms[0];
+
+  const subjectsRes = await pool.query(
+    `SELECT id, code, name, subject_type, is_elective, department_id
+       FROM subject
+      WHERE department_id = $1`,
+    [departmentId],
+  );
+
+  const facultyRes = await pool.query(
+    `SELECT f.id, f.employee_code, f.full_name, u.email, f.department_id
+       FROM faculty f
+       JOIN app_user u ON u.id = f.user_id
+      WHERE u.college_id = $1`,
+    [collegeId],
+  );
+
+  const sectionsRes = await pool.query(
+    `SELECT s.id, s.name, s.batch_id, p.department_id
+       FROM section s
+       JOIN batch b   ON b.id = s.batch_id
+       JOIN program p ON p.id = b.program_id
+      WHERE p.department_id = $1`,
+    [departmentId],
+  );
+
+  const sectionIds = sectionsRes.rows.map((s) => s.id);
+  let labGroups: any[] = [];
+  if (sectionIds.length > 0) {
+    const lgRes = await pool.query(
+      `SELECT lg.id, lg.section_id, lg.name
+         FROM lab_group lg
+        WHERE lg.section_id = ANY($1::bigint[])`,
+      [sectionIds],
+    );
+    labGroups = lgRes.rows;
+  }
+
+  const slotsRes = await pool.query(
+    `SELECT ts.id, ts.term_id, ts.day_of_week, ts.period_no, ts.start_time, ts.end_time, ts.room,
+            ts.faculty_id, sa.section_id, sa.lab_group_id,
+            f.full_name AS faculty_name,
+            su.code AS subject_code,
+            sec.name AS section_name,
+            lg.name AS lab_group_name
+       FROM timetable_slot ts
+       JOIN subject_assignment sa ON sa.id = ts.subject_assignment_id
+       JOIN subject su            ON su.id = sa.subject_id
+       JOIN faculty f             ON f.id = ts.faculty_id
+       JOIN section sec           ON sec.id = sa.section_id
+       LEFT JOIN lab_group lg     ON lg.id = sa.lab_group_id
+      WHERE ts.term_id = $1`,
+    [currentTerm.id],
+  );
+
+  const existingSlots: TimetableSlotItem[] = slotsRes.rows.map((r) => ({
+    id: r.id,
+    term_id: r.term_id,
+    day_of_week: r.day_of_week,
+    period_no: r.period_no,
+    start_time: String(r.start_time).slice(0, 5),
+    end_time: String(r.end_time).slice(0, 5),
+    room: r.room,
+    faculty_id: Number(r.faculty_id),
+    section_id: Number(r.section_id),
+    lab_group_id: r.lab_group_id ? Number(r.lab_group_id) : null,
+    faculty_name: r.faculty_name,
+    subject_code: r.subject_code,
+    section_name: r.section_name,
+    lab_group_name: r.lab_group_name || null,
+  }));
+
+  return {
+    collegeId,
+    departmentId,
+    departmentName: dept.name,
+    departmentCode: dept.code,
+    currentTerm,
+    terms,
+    subjects: subjectsRes.rows,
+    faculty: facultyRes.rows,
+    sections: sectionsRes.rows,
+    labGroups,
+    existingSlots,
+  };
+}
+
+export function validateTimetableRow(
+  rawRow: Record<string, string>,
+  rowNumber: number,
+  mapping: Record<string, string>,
+  cache: TimetableCache,
+  batchSlots: TimetableSlotItem[],
+  seenSlotKeys: Set<string>,
+): { isValid: boolean; mappedData: any; errors: string[] } {
+  const errors: string[] = [];
+
+  const getVal = (canonicalKey: string): string => {
+    for (const [csvCol, mappedKey] of Object.entries(mapping)) {
+      if (mappedKey === canonicalKey && rawRow[csvCol] !== undefined) {
+        return String(rawRow[csvCol]).trim();
+      }
+    }
+    return "";
+  };
+
+  const subjectCode = getVal("subject_code").toUpperCase();
+  const facultyCode = getVal("faculty_code");
+  const sectionName = getVal("section");
+  const labGroupName = getVal("lab_group");
+  const dayVal = getVal("day_of_week");
+  const periodVal = getVal("period_no");
+  const startTimeVal = getVal("start_time");
+  const endTimeVal = getVal("end_time");
+  const roomVal = getVal("room");
+  const termVal = getVal("academic_term");
+
+  if (!subjectCode) errors.push("Subject Code is required");
+  if (!facultyCode) errors.push("Faculty Employee Code is required");
+  if (!sectionName) errors.push("Section is required");
+  if (!dayVal) errors.push("Day of Week is required");
+  if (!roomVal) errors.push("Room is required");
+
+  // 1. Resolve Subject
+  const subject = cache.subjects.find((s) => s.code.toUpperCase() === subjectCode);
+  if (subjectCode && !subject) {
+    errors.push(`Subject '${subjectCode}' does not belong to department ${cache.departmentCode}`);
+  }
+
+  // 2. Resolve Lab Group constraint
+  if (subject && subject.subject_type === "lab" && !labGroupName) {
+    errors.push(`Subject '${subjectCode}' is a laboratory course and requires a valid Lab Group (e.g. A1, A2)`);
+  }
+
+  // 3. Resolve Faculty
+  const faculty = cache.faculty.find(
+    (f) =>
+      f.employee_code.toUpperCase() === facultyCode.toUpperCase() ||
+      f.email.toLowerCase() === facultyCode.toLowerCase() ||
+      f.full_name.toLowerCase() === facultyCode.toLowerCase(),
+  );
+  if (facultyCode && !faculty) {
+    errors.push(`Faculty member with code/name '${facultyCode}' not found`);
+  } else if (faculty && faculty.department_id !== cache.departmentId) {
+    errors.push(`Faculty member '${faculty.full_name}' (${faculty.employee_code}) belongs to another department`);
+  }
+
+  // 4. Resolve Section
+  const section = cache.sections.find((sec) => sec.name.toLowerCase() === sectionName.toLowerCase());
+  if (sectionName && !section) {
+    errors.push(`Section '${sectionName}' not found in department programs`);
+  }
+
+  // 5. Resolve Lab Group
+  let labGroup: any = null;
+  if (labGroupName && section) {
+    labGroup = cache.labGroups.find(
+      (lg) => lg.section_id === section.id && lg.name.toLowerCase() === labGroupName.toLowerCase(),
+    );
+    if (!labGroup) {
+      errors.push(`Lab Group '${labGroupName}' does not belong to Section '${section.name}'`);
+    }
+  }
+
+  // 6. Resolve Term
+  let term = cache.currentTerm;
+  if (termVal) {
+    const matchedTerm = cache.terms.find(
+      (t) =>
+        t.academic_year.toLowerCase() === termVal.toLowerCase() ||
+        termVal.toLowerCase().replace(/^ay\s*/i, "").trim() === t.academic_year.toLowerCase() ||
+        `${t.academic_year}-${t.term_type}`.toLowerCase() === termVal.toLowerCase() ||
+        `${t.academic_year} ${t.term_type}`.toLowerCase() === termVal.toLowerCase() ||
+        `AY ${t.academic_year} ${t.term_type}`.toLowerCase().replace(/\s+/g, "") === termVal.toLowerCase().replace(/\s+/g, "") ||
+        String(t.id) === termVal,
+    );
+    if (matchedTerm) {
+      term = matchedTerm;
+    } else {
+      errors.push(`Academic Term '${termVal}' not recognized in this college`);
+    }
+  }
+
+  // 7. Resolve Day
+  const dayNum = DAY_MAP[dayVal.toLowerCase()];
+  if (dayVal && (!dayNum || dayNum < 1 || dayNum > 7)) {
+    errors.push(`Invalid Day of Week '${dayVal}'. Use Monday-Saturday or 1-6`);
+  }
+
+  // 8. Resolve Period and Times
+  let periodNo = periodVal ? parseInt(periodVal, 10) : undefined;
+  let startTime = startTimeVal;
+  let endTime = endTimeVal;
+
+  if (periodNo && (isNaN(periodNo) || periodNo < 1 || periodNo > 6)) {
+    errors.push(`Period number must be between 1 and 6 (got ${periodVal})`);
+  }
+
+  if (periodNo && PERIOD_TIMES[periodNo]) {
+    if (!startTime) startTime = PERIOD_TIMES[periodNo].start;
+    if (!endTime) endTime = PERIOD_TIMES[periodNo].end;
+  }
+
+  if (!periodNo && startTime) {
+    for (const [pStr, times] of Object.entries(PERIOD_TIMES)) {
+      if (times.start === startTime.slice(0, 5)) {
+        periodNo = Number(pStr);
+        if (!endTime) endTime = times.end;
+        break;
+      }
+    }
+  }
+
+  if (!periodNo) {
+    errors.push("Period number (1-6) could not be determined. Please specify Period or valid Start Time");
+  }
+
+  if (!startTime || !endTime) {
+    errors.push("Start and End times could not be determined for this period");
+  } else if (startTime.slice(0, 5) >= endTime.slice(0, 5)) {
+    errors.push(`Start time (${startTime}) must be strictly before end time (${endTime})`);
+  }
+
+  const normStartTime = startTime ? startTime.slice(0, 5) : "";
+  const normEndTime = endTime ? endTime.slice(0, 5) : "";
+
+  // 9. Deduplication check in batch
+  const dedupeKey = `${term.id}_${dayNum}_${periodNo || normStartTime}_${subject?.id}_${section?.id}_${labGroup?.id || "whole"}`;
+  if (seenSlotKeys.has(dedupeKey)) {
+    errors.push(`Duplicate slot: ${subjectCode} for Section ${sectionName} is repeated on day ${dayNum} period ${periodNo || normStartTime}`);
+  } else {
+    seenSlotKeys.add(dedupeKey);
+  }
+
+  // 10. Clash detection against existing DB slots and previous valid rows in this batch!
+  if (errors.length === 0 && dayNum && faculty && section) {
+    const allSlotsToCheck = [...cache.existingSlots, ...batchSlots];
+
+    for (const other of allSlotsToCheck) {
+      if (other.term_id !== term.id || other.day_of_week !== dayNum) continue;
+
+      // Check time overlap: startA < endB && endA > startB
+      const overlaps = normStartTime < other.end_time && normEndTime > other.start_time;
+      if (!overlaps) continue;
+
+      const otherStart = other.start_time;
+      const otherEnd = other.end_time;
+
+      // Rule 1: Faculty clash
+      if (other.faculty_id === faculty.id) {
+        errors.push(`Faculty clash: ${faculty.full_name} is already scheduled in ${other.room} from ${otherStart} to ${otherEnd}`);
+        break;
+      }
+
+      // Rule 2: Room clash
+      if (other.room.trim().toLowerCase() === roomVal.trim().toLowerCase()) {
+        errors.push(`Room clash: Room ${other.room} is already occupied by ${other.subject_code} from ${otherStart} to ${otherEnd}`);
+        break;
+      }
+
+      // Rules 3, 4, 5: Section and Lab Group conflicts
+      if (other.section_id === section.id) {
+        const otherIsLab = !!other.lab_group_id;
+        const targetIsLab = !!labGroup?.id;
+
+        // Rule 3: Whole section vs whole section
+        if (!otherIsLab && !targetIsLab) {
+          errors.push(`Section clash: Section ${section.name} already has a whole-section lecture (${other.subject_code}) from ${otherStart} to ${otherEnd}`);
+          break;
+        }
+
+        // Rule 4: Whole section vs lab group
+        if ((!otherIsLab && targetIsLab) || (otherIsLab && !targetIsLab)) {
+          errors.push(`Section clash: Cannot schedule concurrent whole-section lecture and lab group for Section ${section.name} from ${otherStart} to ${otherEnd}`);
+          break;
+        }
+
+        // Rule 5: Same lab group
+        if (otherIsLab && targetIsLab && other.lab_group_id === labGroup.id) {
+          errors.push(`Lab group clash: Lab Group ${labGroupName} already has a session scheduled from ${otherStart} to ${otherEnd}`);
+          break;
+        }
+
+        // Rule 6: Different lab groups in different rooms with different faculty are permitted!
+      }
+    }
+  }
+
+  const mappedData = {
+    subject_id: subject?.id,
+    subject_code: subjectCode,
+    subject_name: subject?.name,
+    subject_type: subject?.subject_type,
+    faculty_id: faculty?.id,
+    faculty_code: facultyCode,
+    faculty_name: faculty?.full_name,
+    section_id: section?.id,
+    section_name: sectionName,
+    lab_group_id: labGroup?.id ?? null,
+    lab_group_name: labGroupName || null,
+    day_of_week: dayNum,
+    period_no: periodNo,
+    start_time: normStartTime,
+    end_time: normEndTime,
+    room: roomVal,
+    term_id: term.id,
+    academic_term: `${term.academic_year} ${term.term_type}`,
+  };
+
+  if (errors.length === 0) {
+    batchSlots.push({
+      term_id: term.id,
+      day_of_week: dayNum!,
+      period_no: periodNo!,
+      start_time: normStartTime,
+      end_time: normEndTime,
+      room: roomVal,
+      faculty_id: faculty!.id,
+      section_id: section!.id,
+      lab_group_id: labGroup ? labGroup.id : null,
+      faculty_name: faculty!.full_name,
+      subject_code: subjectCode,
+      section_name: sectionName,
+      lab_group_name: labGroupName || null,
+    });
+  }
+
+  return {
+    isValid: errors.length === 0,
+    mappedData,
+    errors,
+  };
+}
+
+export async function generateTimetableTemplate(
+  collegeId: number,
+  departmentId?: number,
+  termId?: number,
+): Promise<{ csv: string; filename: string }> {
+  let cache: TimetableCache | null = null;
+  if (departmentId) {
+    try {
+      cache = await loadTimetableContext(collegeId, departmentId, termId);
+    } catch {}
+  }
+
+  const headers = [
+    "Subject Code",
+    "Faculty Code",
+    "Section",
+    "Lab Group",
+    "Day",
+    "Period",
+    "Start Time",
+    "End Time",
+    "Room",
+    "Academic Term",
+  ];
+
+  const rows: string[][] = [];
+
+  if (cache && cache.subjects.length > 0) {
+    const theorySubjects = cache.subjects.filter((s) => s.subject_type === "theory");
+    const labSubjects = cache.subjects.filter((s) => s.subject_type === "lab");
+    const sampleSec = cache.sections.find((s) => s.name.toUpperCase() === "B")?.name || cache.sections[0]?.name || "A";
+    const sampleLg1 = cache.labGroups.find((lg) => lg.name.includes("1"))?.name || "B1";
+    const sampleLg2 = cache.labGroups.find((lg) => lg.name.includes("2"))?.name || "B2";
+    const sampleFac1 = cache.faculty.find((f) => f.department_id === cache!.departmentId)?.employee_code || cache.faculty[0]?.employee_code || "EMP101";
+    const sampleFac2 = cache.faculty.filter((f) => f.department_id === cache!.departmentId)[1]?.employee_code || sampleFac1;
+    const sampleFac3 = cache.faculty.filter((f) => f.department_id === cache!.departmentId)[2]?.employee_code || sampleFac1;
+    const termLabel = `AY ${cache.currentTerm.academic_year} ${cache.currentTerm.term_type}`;
+
+    const sub1 = theorySubjects[0]?.code || cache.subjects[0]?.code || "CO501";
+    rows.push([sub1, sampleFac1, sampleSec, "", "Wednesday", "4", "12:15", "13:15", "LH-102", termLabel]);
+
+    const sub2 = theorySubjects[1]?.code || theorySubjects[0]?.code || "CO502";
+    rows.push([sub2, sampleFac2, sampleSec, "", "Wednesday", "5", "14:00", "15:00", "LH-102", termLabel]);
+
+    if (labSubjects.length > 0) {
+      const labSub = labSubjects[0]?.code || "CO503";
+      rows.push([labSub, sampleFac1, sampleSec, sampleLg1, "Friday", "5", "14:00", "15:00", "Lab 1", termLabel]);
+      rows.push([labSub, sampleFac3, sampleSec, sampleLg2, "Friday", "5", "14:00", "15:00", "Lab 2", termLabel]);
+    }
+  } else {
+    rows.push(["CO501", "EMP101", "A", "", "Wednesday", "4", "12:15", "13:15", "LH-102", "AY 2026-27 Even"]);
+    rows.push(["CO502", "EMP102", "A", "", "Wednesday", "5", "14:00", "15:00", "LH-102", "AY 2026-27 Even"]);
+    rows.push(["CO503", "EMP101", "A", "A1", "Friday", "5", "14:00", "15:00", "Lab 1", "AY 2026-27 Even"]);
+    rows.push(["CO503", "EMP103", "A", "A2", "Friday", "5", "14:00", "15:00", "Lab 2", "AY 2026-27 Even"]);
+  }
+
+  const deptCode = cache?.departmentCode || "timetable";
+  const filename = `${deptCode.toLowerCase()}_timetable_template.csv`;
+  const csv = serializeToCsv(headers, rows);
+  return { csv, filename };
+}
+
 function verifyContextBelongsToCollege(context: ImportContext, cache: InstitutionalCache): void {
   if (context.departmentId && !cache.departments.some((d) => d.id === context.departmentId)) {
     throw Object.assign(new Error("Selected department does not exist in this college"), { status: 403 });
@@ -862,6 +1373,7 @@ export async function previewCsv(
   let instCache: InstitutionalCache | null = null;
   let marksCache: MarksCache | null = null;
   let attendanceCache: AttendanceCache | null = null;
+  let timetableCache: TimetableCache | null = null;
 
   if (entityType === "student" || entityType === "faculty") {
     instCache = await loadInstitutionalCache(collegeId);
@@ -876,10 +1388,16 @@ export async function previewCsv(
       throw Object.assign(new Error("session_id is required for attendance import"), { status: 400 });
     }
     attendanceCache = await loadAttendanceContext(collegeId, context.sessionId, context.userId, context.userRole);
+  } else if (entityType === "timetable") {
+    if (!context.departmentId) {
+      throw Object.assign(new Error("department_id is required for timetable import"), { status: 400 });
+    }
+    timetableCache = await loadTimetableContext(collegeId, context.departmentId, context.termId);
   }
 
   const seenKeys = new Set<string>();
   const seenEmails = new Set<string>();
+  const batchSlots: TimetableSlotItem[] = [];
   const previewRows: RowPreview[] = [];
   const allErrors: RowError[] = [];
   let validRowCount = 0;
@@ -895,8 +1413,10 @@ export async function previewCsv(
       validation = validateFacultyRow(rawRow, rowNumber, effectiveMappings, instCache!, context, seenKeys, seenEmails);
     } else if (entityType === "marks") {
       validation = validateMarksRow(rawRow, rowNumber, effectiveMappings, marksCache!, context.component!, seenKeys);
-    } else {
+    } else if (entityType === "attendance") {
       validation = validateAttendanceRow(rawRow, rowNumber, effectiveMappings, attendanceCache!, seenKeys);
+    } else {
+      validation = validateTimetableRow(rawRow, rowNumber, effectiveMappings, timetableCache!, batchSlots, seenKeys);
     }
 
     if (validation.isValid) {
@@ -907,7 +1427,10 @@ export async function previewCsv(
         allErrors.push({
           rowNumber,
           identifier:
-            validation.mappedData.roll_no || validation.mappedData.employee_code || undefined,
+            validation.mappedData.roll_no ||
+            validation.mappedData.employee_code ||
+            validation.mappedData.subject_code ||
+            undefined,
           error: err,
         });
       });
@@ -958,6 +1481,7 @@ export async function executeImport(
   let instCache: InstitutionalCache | null = null;
   let marksCache: MarksCache | null = null;
   let attendanceCache: AttendanceCache | null = null;
+  let timetableCache: TimetableCache | null = null;
 
   if (entityType === "student" || entityType === "faculty") {
     instCache = await loadInstitutionalCache(collegeId);
@@ -972,10 +1496,16 @@ export async function executeImport(
       throw Object.assign(new Error("session_id is required for attendance import"), { status: 400 });
     }
     attendanceCache = await loadAttendanceContext(collegeId, context.sessionId, context.userId, context.userRole);
+  } else if (entityType === "timetable") {
+    if (!context.departmentId) {
+      throw Object.assign(new Error("department_id is required for timetable import"), { status: 400 });
+    }
+    timetableCache = await loadTimetableContext(collegeId, context.departmentId, context.termId);
   }
 
   const seenKeys = new Set<string>();
   const seenEmails = new Set<string>();
+  const batchSlots: TimetableSlotItem[] = [];
   const validRecords: Array<{ rowNumber: number; mapped: any; raw: Record<string, string> }> = [];
   const errors: RowError[] = [];
   const failedRawRows: Array<{ rowNumber: number; raw: Record<string, string>; error: string }> = [];
@@ -990,8 +1520,10 @@ export async function executeImport(
       validation = validateFacultyRow(rawRow, rowNumber, mappings, instCache!, context, seenKeys, seenEmails);
     } else if (entityType === "marks") {
       validation = validateMarksRow(rawRow, rowNumber, mappings, marksCache!, context.component!, seenKeys);
-    } else {
+    } else if (entityType === "attendance") {
       validation = validateAttendanceRow(rawRow, rowNumber, mappings, attendanceCache!, seenKeys);
+    } else {
+      validation = validateTimetableRow(rawRow, rowNumber, mappings, timetableCache!, batchSlots, seenKeys);
     }
 
     if (validation.isValid) {
@@ -1003,7 +1535,10 @@ export async function executeImport(
         errors.push({
           rowNumber,
           identifier:
-            validation.mappedData.roll_no || validation.mappedData.employee_code || undefined,
+            validation.mappedData.roll_no ||
+            validation.mappedData.employee_code ||
+            validation.mappedData.subject_code ||
+            undefined,
           error: err,
         });
       });
@@ -1031,6 +1566,10 @@ export async function executeImport(
 
   try {
     await client.query("BEGIN");
+
+    if (entityType === "timetable") {
+      await client.query("SELECT pg_advisory_xact_lock(hashtext('timetable_import_' || $1))", [collegeId]);
+    }
 
     for (const record of validRecords) {
       if (entityType === "student") {
@@ -1112,7 +1651,9 @@ export async function executeImport(
       } else if (entityType === "attendance") {
         await client.query(
           `INSERT INTO attendance (lecture_session_id, student_id, status, marked_at)
-           VALUES ($1, $2, $3, now())`,
+           VALUES ($1, $2, $3, now())
+           ON CONFLICT (lecture_session_id, student_id)
+           DO UPDATE SET status = EXCLUDED.status, marked_at = now()`,
           [
             context.sessionId,
             record.mapped.student_id,
@@ -1120,7 +1661,63 @@ export async function executeImport(
           ],
         );
         importedCount++;
+      } else if (entityType === "timetable") {
+        const item = record.mapped;
+
+        // 1. Resolve or create subject_assignment
+        let assignmentId: number;
+        const existingAssRes = await client.query(
+          `SELECT id FROM subject_assignment
+            WHERE subject_id = $1
+              AND faculty_id = $2
+              AND section_id = $3
+              AND lab_group_id IS NOT DISTINCT FROM $4
+              AND term_id = $5`,
+          [item.subject_id, item.faculty_id, item.section_id, item.lab_group_id, item.term_id],
+        );
+
+        if (existingAssRes.rows.length > 0) {
+          assignmentId = existingAssRes.rows[0].id;
+        } else {
+          const newAssRes = await client.query(
+            `INSERT INTO subject_assignment (subject_id, faculty_id, section_id, lab_group_id, term_id)
+             VALUES ($1, $2, $3, $4, $5)
+             RETURNING id`,
+            [item.subject_id, item.faculty_id, item.section_id, item.lab_group_id, item.term_id],
+          );
+          assignmentId = newAssRes.rows[0].id;
+        }
+
+        // 2. Insert timetable slot (Triggers trg_slot_fill and trg_timetable_slot_clash_guard will validate)
+        await client.query(
+          `INSERT INTO timetable_slot (subject_assignment_id, faculty_id, term_id, day_of_week, period_no, start_time, end_time, room)
+           VALUES ($1, $2, $3, $4, $5, $6::time, $7::time, $8)`,
+          [
+            assignmentId,
+            item.faculty_id,
+            item.term_id,
+            item.day_of_week,
+            item.period_no,
+            item.start_time,
+            item.end_time,
+            item.room,
+          ],
+        );
+        importedCount++;
       }
+    }
+
+    // If attendance was imported, lock the lecture session and mark as held
+    if (entityType === "attendance" && context.sessionId && importedCount > 0) {
+      await client.query(
+        `UPDATE lecture_session
+            SET is_locked = true,
+                status = 'held',
+                locked_at = now(),
+                locked_by = $2
+          WHERE id = $1`,
+        [context.sessionId, context.userId || null],
+      );
     }
 
     await client.query("COMMIT");

@@ -43,5 +43,11 @@ router.get(
   ic.downloadAttendanceTemplate,
 );
 
+router.get(
+  "/template/timetable",
+  authorize("college_admin", "dept_admin"),
+  ic.downloadTimetableTemplate,
+);
+
 export default router;
 

@@ -18,6 +18,7 @@ import {
   TrendingUp,
   Download,
   Filter,
+  RefreshCw,
 } from "lucide-react";
 import CsvImportWizard from "@/components/CsvImportWizard";
 import {
@@ -38,6 +39,7 @@ export default function CollegeAdminDashboard() {
   // Analytics state
   const [analytics, setAnalytics] = useState<any[]>([]);
   const [loadingAnalytics, setLoadingAnalytics] = useState(false);
+  const [facultyList, setFacultyList] = useState<any[]>([]);
 
   // Institution state
   const [departments, setDepartments] = useState<any[]>([]);
@@ -74,7 +76,7 @@ export default function CollegeAdminDashboard() {
   async function loadAll() {
     setLoadingAnalytics(true);
     try {
-      const [anRes, dRes, pRes, bRes, sRes, lgRes, tRes, setRes] = await Promise.all([
+      const [anRes, dRes, pRes, bRes, sRes, lgRes, tRes, setRes, fRes] = await Promise.all([
         apiFetch<any[]>("/api/reports/analytics"),
         apiFetch<any[]>("/api/institution/departments"),
         apiFetch<any[]>("/api/institution/programs"),
@@ -83,6 +85,7 @@ export default function CollegeAdminDashboard() {
         apiFetch<any[]>("/api/institution/lab-groups"),
         apiFetch<any[]>("/api/institution/academic-terms"),
         apiFetch<any>("/api/institution/settings"),
+        apiFetch<any[]>("/api/academic/faculty").catch(() => []),
       ]);
 
       setAnalytics(anRes);
@@ -94,6 +97,9 @@ export default function CollegeAdminDashboard() {
       setTerms(tRes);
       if (setRes?.attendance_threshold) {
         setThreshold(String(setRes.attendance_threshold));
+      }
+      if (fRes) {
+        setFacultyList(fRes);
       }
     } catch {} finally {
       setLoadingAnalytics(false);
@@ -177,18 +183,45 @@ export default function CollegeAdminDashboard() {
     : "AY 2026-27 • Active Term";
 
   const totalStudents = analytics.reduce((acc, d) => acc + Number(d.total_students || 0), 0);
-  const totalShortage = analytics.reduce((acc, d) => acc + Number(d.below_threshold_count || 0), 0);
+  const totalFaculty =
+    facultyList.length > 0
+      ? facultyList.length
+      : analytics.reduce((acc, d) => acc + Number(d.total_faculty || 0), 0);
+  const totalShortage = analytics.reduce(
+    (acc, d) => acc + Number(d.below_threshold_count ?? d.below_threshold_students ?? 0),
+    0,
+  );
+  const reportingDeptsWithAtt = analytics.filter(
+    (d) => Number(d.total_students || 0) > 0 && Number(d.average_attendance_pct ?? d.avg_attendance_pct ?? 0) > 0,
+  );
   const collegeAvgAttendance =
-    analytics.length > 0
-      ? (analytics.reduce((acc, d) => acc + Number(d.average_attendance_pct || 0), 0) / analytics.length).toFixed(1)
-      : "0.0";
+    reportingDeptsWithAtt.length > 0
+      ? (
+          reportingDeptsWithAtt.reduce(
+            (acc, d) => acc + Number(d.average_attendance_pct ?? d.avg_attendance_pct ?? 0),
+            0,
+          ) / reportingDeptsWithAtt.length
+        ).toFixed(1)
+      : analytics.length > 0
+        ? (
+            analytics.reduce(
+              (acc, d) => acc + Number(d.average_attendance_pct ?? d.avg_attendance_pct ?? 0),
+              0,
+            ) / analytics.length
+          ).toFixed(1)
+        : "0.0";
 
   return (
     <div className="min-h-screen bg-[#FFF9F7] flex flex-col font-sans selection:bg-[#F0E5F7] selection:text-[#55368F]">
       {/* ================= SHARED APPLICATION HEADER & HORIZONTAL NAV ================= */}
       <AppHeader
         activeTab={activeTab}
-        onTabChange={(tab) => setActiveTab(tab as any)}
+        onTabChange={(tab) => {
+          setActiveTab(tab as any);
+          if (tab === "analytics") {
+            loadAll();
+          }
+        }}
         termText={termDisplay}
         statusBadge="8 Department Nodes Synced"
         navItems={[
@@ -274,6 +307,16 @@ export default function CollegeAdminDashboard() {
               <div className="flex flex-wrap items-center gap-2.5">
                 <button
                   type="button"
+                  onClick={() => loadAll()}
+                  disabled={loadingAnalytics}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#FFF9F7] border border-[#EAE2EA] text-[#29232F] hover:bg-[#F0E5F7]/40 text-xs font-semibold transition disabled:opacity-50"
+                  title="Force immediate synchronization with database"
+                >
+                  <RefreshCw className={`w-4 h-4 text-[#7150B5] ${loadingAnalytics ? "animate-spin" : ""}`} />
+                  <span>{loadingAnalytics ? "Syncing..." : "Sync / Refresh Analytics"}</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => setActiveTab("settings")}
                   className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#FFF9F7] border border-[#EAE2EA] text-[#29232F] hover:bg-[#F0E5F7]/40 text-xs font-semibold transition"
                 >
@@ -310,8 +353,8 @@ export default function CollegeAdminDashboard() {
                   </div>
                 </div>
                 <div className="mt-4 pt-3 border-t border-[#EAE2EA]/60 flex items-center justify-between text-[11px] text-[#777080]">
-                  <span>Degree Programs:</span>
-                  <span className="font-semibold text-[#29232F]">{programs.length} Configured</span>
+                  <span>Faculty Staff:</span>
+                  <span className="font-semibold text-[#29232F]">{totalFaculty} Appointed</span>
                 </div>
               </div>
 
@@ -474,20 +517,54 @@ export default function CollegeAdminDashboard() {
                         Active Students
                       </th>
                       <th className="px-4 py-3 text-center font-bold text-[#777080] uppercase tracking-wider">
+                        Faculty
+                      </th>
+                      <th className="px-4 py-3 text-center font-bold text-[#777080] uppercase tracking-wider">
                         Avg Attendance
                       </th>
                       <th className="px-4 py-3 text-center font-bold text-[#777080] uppercase tracking-wider">
                         Shortage (&lt;{threshold}%)
                       </th>
                       <th className="px-5 py-3 text-right font-bold text-[#777080] uppercase tracking-wider">
-                        Status
+                        Compliance Status
                       </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[#EAE2EA]/70 bg-white">
                     {analytics.map((dept) => {
-                      const avg = Number(dept.average_attendance_pct || 0);
-                      const isCompliant = avg >= Number(threshold);
+                      const avg = Number(dept.average_attendance_pct ?? dept.avg_attendance_pct ?? 0);
+                      const studentCount = Number(dept.total_students || 0);
+                      const shortageCount = Number(dept.below_threshold_count ?? dept.below_threshold_students ?? 0);
+                      const facultyCount = Number(dept.total_faculty || 0);
+                      const hasData = studentCount > 0 && (avg > 0 || shortageCount > 0);
+
+                      let statusBadge;
+                      if (!hasData) {
+                        statusBadge = (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                            No Data
+                          </span>
+                        );
+                      } else if (avg >= Number(threshold)) {
+                        statusBadge = (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                            <Check className="w-3 h-3" /> Compliant
+                          </span>
+                        );
+                      } else if (avg >= Number(threshold) - 10) {
+                        statusBadge = (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                            <AlertTriangle className="w-3 h-3" /> Warning
+                          </span>
+                        );
+                      } else {
+                        statusBadge = (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-50 text-red-800 border border-red-200">
+                            <AlertTriangle className="w-3 h-3" /> Critical
+                          </span>
+                        );
+                      }
+
                       return (
                         <tr key={dept.department_id} className="hover:bg-[#FFF9F7]/70 transition-colors">
                           <td className="px-5 py-3.5 font-semibold text-[#29232F]">
@@ -497,34 +574,39 @@ export default function CollegeAdminDashboard() {
                             {dept.department_code}
                           </td>
                           <td className="px-4 py-3.5 text-center font-medium text-[#29232F]">
-                            {dept.total_students}
+                            {studentCount}
+                          </td>
+                          <td className="px-4 py-3.5 text-center font-medium text-[#29232F]">
+                            {facultyCount}
                           </td>
                           <td className="px-4 py-3.5 text-center font-semibold text-[#29232F]">
                             <div className="inline-flex items-center gap-2">
-                              <span>{avg}%</span>
+                              <span>{hasData ? `${avg}%` : "0.0%"}</span>
                               <div className="w-16 h-1.5 rounded-full bg-[#EAE2EA] overflow-hidden hidden sm:block">
                                 <div
-                                  className={`h-full rounded-full ${isCompliant ? "bg-[#7150B5]" : "bg-[#D96F79]"}`}
+                                  className={`h-full rounded-full ${
+                                    !hasData
+                                      ? "bg-gray-300"
+                                      : avg >= Number(threshold)
+                                        ? "bg-[#7150B5]"
+                                        : "bg-[#D96F79]"
+                                  }`}
                                   style={{ width: `${Math.min(avg, 100)}%` }}
                                 ></div>
                               </div>
                             </div>
                           </td>
                           <td className="px-4 py-3.5 text-center">
-                            <span className="font-bold text-[#D96F79] bg-red-50 px-2 py-0.5 rounded-md">
-                              {dept.below_threshold_count}
+                            <span
+                              className={`font-bold px-2 py-0.5 rounded-md ${
+                                shortageCount > 0 ? "text-[#D96F79] bg-red-50" : "text-[#777080] bg-gray-50"
+                              }`}
+                            >
+                              {shortageCount}
                             </span>
                           </td>
                           <td className="px-5 py-3.5 text-right">
-                            {isCompliant ? (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
-                                <Check className="w-3 h-3" /> Compliant
-                              </span>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-50 text-red-800 border border-red-200">
-                                <AlertTriangle className="w-3 h-3" /> Review Needed
-                              </span>
-                            )}
+                            {statusBadge}
                           </td>
                         </tr>
                       );

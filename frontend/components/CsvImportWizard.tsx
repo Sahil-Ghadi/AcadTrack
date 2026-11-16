@@ -16,7 +16,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 
-export type EntityType = "student" | "faculty" | "marks" | "attendance";
+export type EntityType = "student" | "faculty" | "marks" | "attendance" | "timetable";
 
 interface CanonicalField {
   key: string;
@@ -66,6 +66,7 @@ interface CsvImportWizardProps {
   assignmentId?: number;
   component?: "IT1" | "IT2" | "IT3" | "ASSIGNMENT";
   sessionId?: number;
+  termId?: number;
   templateUrl?: string;
   templateFilename?: string;
   onCancel?: () => void;
@@ -79,6 +80,7 @@ export default function CsvImportWizard({
   assignmentId,
   component,
   sessionId,
+  termId,
   templateUrl,
   templateFilename,
   onCancel,
@@ -107,19 +109,28 @@ export default function CsvImportWizard({
   const isFaculty = entityType === "faculty";
   const isMarks = entityType === "marks";
   const isAttendance = entityType === "attendance";
+  const isTimetable = entityType === "timetable";
   const entityTitle = isFaculty
     ? "Faculty"
     : isMarks
     ? `Internal Marks (${component || ""})`
     : isAttendance
     ? "Attendance"
+    : isTimetable
+    ? "Timetable Schedule"
     : "Student";
 
+  const effectiveTemplateUrl =
+    templateUrl ||
+    (entityType === "timetable"
+      ? `/api/import/template/timetable${fixedDeptId || selectedDeptId ? `?department_id=${fixedDeptId || selectedDeptId}` : ""}`
+      : undefined);
+
   async function handleDownloadTemplate() {
-    if (!templateUrl) return;
+    if (!effectiveTemplateUrl) return;
     setDownloadingTemplate(true);
     try {
-      const csvText = await apiFetch<string>(templateUrl);
+      const csvText = await apiFetch<string>(effectiveTemplateUrl);
       const blob = new Blob([csvText], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
@@ -167,6 +178,7 @@ export default function CsvImportWizard({
     if (assignmentId) formData.append("assignment_id", String(assignmentId));
     if (component) formData.append("component", component);
     if (sessionId) formData.append("session_id", String(sessionId));
+    if (termId) formData.append("term_id", String(termId));
 
     try {
       const res = await apiFetch<PreviewResponse>("/api/import/preview", {
@@ -215,6 +227,7 @@ export default function CsvImportWizard({
     if (assignmentId) formData.append("assignment_id", String(assignmentId));
     if (component) formData.append("component", component);
     if (sessionId) formData.append("session_id", String(sessionId));
+    if (termId) formData.append("term_id", String(termId));
 
     try {
       const res = await apiFetch<PreviewResponse>("/api/import/preview", {
@@ -250,6 +263,7 @@ export default function CsvImportWizard({
     if (assignmentId) formData.append("assignment_id", String(assignmentId));
     if (component) formData.append("component", component);
     if (sessionId) formData.append("session_id", String(sessionId));
+    if (termId) formData.append("term_id", String(termId));
 
     try {
       const res = await apiFetch<ExecuteResponse>("/api/import/execute", {
@@ -361,17 +375,23 @@ export default function CsvImportWizard({
             </p>
           </div>
 
-          {templateUrl && (
-            <div className="mb-5 p-3.5 rounded-xl bg-indigo-50/70 border border-indigo-100 flex items-center justify-between gap-3">
+          {effectiveTemplateUrl && (
+            <div className="mb-5 p-3.5 rounded-xl bg-[#F0E5F7]/70 border border-[#EAE2EA] flex items-center justify-between gap-3">
               <div>
-                <p className="text-xs font-bold text-indigo-950">Pre-filled Roster Template</p>
-                <p className="text-[11px] text-indigo-700">Download a CSV template pre-populated with eligible students</p>
+                <p className="text-xs font-bold text-[#55368F]">
+                  {isTimetable ? "Department Timetable CSV Template" : "Pre-filled Roster Template"}
+                </p>
+                <p className="text-[11px] text-[#777080]">
+                  {isTimetable
+                    ? "Download template with actual subject codes, faculty codes, sections and lab groups from your department"
+                    : "Download a CSV template pre-populated with eligible records"}
+                </p>
               </div>
               <button
                 type="button"
                 onClick={handleDownloadTemplate}
                 disabled={downloadingTemplate}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-indigo-200 text-indigo-700 text-xs font-bold hover:bg-indigo-50 shadow-2xs shrink-0 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-[#EAE2EA] text-[#7150B5] text-xs font-bold hover:bg-[#F0E5F7]/40 shadow-2xs shrink-0 disabled:opacity-50"
               >
                 {downloadingTemplate ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Download className="w-3.5 h-3.5" />}
                 Download Template

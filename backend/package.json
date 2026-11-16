@@ -10,7 +10,8 @@
     "test": "tsx tests/import-unit.test.ts",
     "test:unit": "tsx tests/import-unit.test.ts",
     "test:import": "tsx tests/import-api.test.ts",
-    "test:integration": "tsx tests/import-api.test.ts"
+    "test:integration": "tsx tests/import-api.test.ts",
+    "test:timetable": "tsx tests/timetable-analytics.test.ts"
   },
   "keywords": [],
   "author": "",

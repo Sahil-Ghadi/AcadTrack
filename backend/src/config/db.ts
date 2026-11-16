@@ -1,3 +1,6 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import { Pool, types } from "pg";
 
 // Parse PostgreSQL INT8 (bigint, OID 20) as JavaScript integer

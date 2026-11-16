@@ -206,23 +206,103 @@ export async function getClassStatistics(assignmentId: number, collegeId: number
 
 export async function getDepartmentAnalytics(collegeId: number, departmentId?: number) {
   const { rows } = await pool.query(
-    `SELECT d.id AS department_id, d.name AS department_name, d.code AS department_code,
-            COUNT(DISTINCT s.id) AS total_students,
-            COUNT(DISTINCT sa.id) AS total_subject_assignments,
-            ROUND(AVG(vas.attendance_pct), 2) AS avg_attendance_pct,
-            COUNT(DISTINCT s.id) FILTER (WHERE vas.is_eligible = false) AS below_threshold_students,
-            COUNT(DISTINCT s.id) FILTER (WHERE vas.is_eligible = true)  AS eligible_students
-       FROM department d
-       JOIN subject su            ON su.department_id = d.id
-       JOIN subject_assignment sa ON sa.subject_id = su.id
-       JOIN academic_term t       ON t.id = sa.term_id AND t.is_current = true
-       JOIN student s             ON s.section_id = sa.section_id
-       LEFT JOIN v_attendance_summary vas
-              ON vas.student_id = s.id AND vas.subject_assignment_id = sa.id
-      WHERE d.college_id = $1
-        AND ($2::bigint IS NULL OR d.id = $2)
-      GROUP BY d.id, d.name, d.code
-      ORDER BY d.name`,
+    `WITH current_term AS (
+        SELECT id FROM academic_term
+         WHERE college_id = $1
+         ORDER BY is_current DESC, start_date DESC
+         LIMIT 1
+    ),
+    dept_students AS (
+        SELECT COALESCE(p.department_id, u.department_id) AS department_id,
+               COUNT(DISTINCT s.id) AS student_count
+          FROM student s
+          JOIN app_user u ON u.id = s.user_id AND u.is_active = true
+          LEFT JOIN section sec ON sec.id = s.section_id
+          LEFT JOIN batch b ON b.id = sec.batch_id
+          LEFT JOIN program p ON p.id = b.program_id
+         WHERE u.college_id = $1
+         GROUP BY COALESCE(p.department_id, u.department_id)
+    ),
+    dept_faculty AS (
+        SELECT f.department_id, COUNT(DISTINCT f.id) AS faculty_count
+          FROM faculty f
+          JOIN app_user u ON u.id = f.user_id AND u.is_active = true
+          JOIN department d ON d.id = f.department_id
+         WHERE d.college_id = $1
+         GROUP BY f.department_id
+    ),
+    dept_assignments AS (
+        SELECT su.department_id, COUNT(DISTINCT sa.id) AS assignment_count
+          FROM subject_assignment sa
+          JOIN subject su ON su.id = sa.subject_id
+          JOIN department d ON d.id = su.department_id
+         WHERE d.college_id = $1
+           AND (sa.term_id = (SELECT id FROM current_term) OR (SELECT id FROM current_term) IS NULL)
+         GROUP BY su.department_id
+    ),
+    student_att AS (
+        SELECT su.department_id,
+               a.student_id,
+               sa.id AS subject_assignment_id,
+               COUNT(*) AS total_lectures,
+               COUNT(*) FILTER (WHERE a.status = 'present') AS present_count,
+               ROUND(100.0 * COUNT(*) FILTER (WHERE a.status = 'present') / COUNT(*), 2) AS attendance_pct,
+               st.attendance_threshold,
+               (100.0 * COUNT(*) FILTER (WHERE a.status = 'present') / COUNT(*)) >= st.attendance_threshold AS is_eligible
+          FROM attendance a
+          JOIN lecture_session ls ON ls.id = a.lecture_session_id AND (ls.status = 'held' OR ls.is_locked = true)
+          JOIN timetable_slot ts ON ts.id = ls.timetable_slot_id
+          JOIN subject_assignment sa ON sa.id = ts.subject_assignment_id
+          JOIN subject su ON su.id = sa.subject_id
+          JOIN department d ON d.id = su.department_id
+          JOIN settings st ON st.college_id = d.college_id
+         WHERE d.college_id = $1
+           AND (sa.term_id = (SELECT id FROM current_term) OR (SELECT id FROM current_term) IS NULL)
+         GROUP BY su.department_id, a.student_id, sa.id, st.attendance_threshold
+    ),
+    dept_att_agg AS (
+        SELECT department_id,
+               ROUND(AVG(attendance_pct), 2) AS avg_attendance_pct,
+               COUNT(DISTINCT student_id) FILTER (WHERE is_eligible = false) AS below_threshold_students,
+               COUNT(DISTINCT student_id) FILTER (WHERE is_eligible = true) AS eligible_students
+          FROM student_att
+         GROUP BY department_id
+    ),
+    dept_marks_agg AS (
+        SELECT su.department_id,
+               COUNT(DISTINCT m.student_id) AS assessed_students,
+               ROUND(AVG(m.marks_obtained), 2) AS avg_marks
+          FROM marks m
+          JOIN subject_assignment sa ON sa.id = m.subject_assignment_id
+          JOIN subject su ON su.id = sa.subject_id
+          JOIN department d ON d.id = su.department_id
+         WHERE d.college_id = $1
+           AND (sa.term_id = (SELECT id FROM current_term) OR (SELECT id FROM current_term) IS NULL)
+         GROUP BY su.department_id
+    )
+    SELECT d.id AS department_id,
+           d.name AS department_name,
+           d.code AS department_code,
+           COALESCE(ds.student_count, 0)::int AS total_students,
+           COALESCE(df.faculty_count, 0)::int AS total_faculty,
+           COALESCE(da.assignment_count, 0)::int AS total_subject_assignments,
+           COALESCE(daa.avg_attendance_pct, 0.0)::numeric(5,2) AS average_attendance_pct,
+           COALESCE(daa.avg_attendance_pct, 0.0)::numeric(5,2) AS avg_attendance_pct,
+           COALESCE(daa.below_threshold_students, 0)::int AS below_threshold_count,
+           COALESCE(daa.below_threshold_students, 0)::int AS below_threshold_students,
+           COALESCE(daa.eligible_students, 0)::int AS eligible_count,
+           COALESCE(daa.eligible_students, 0)::int AS eligible_students,
+           COALESCE(dma.assessed_students, 0)::int AS assessed_students,
+           dma.avg_marks
+      FROM department d
+      LEFT JOIN dept_students ds ON ds.department_id = d.id
+      LEFT JOIN dept_faculty df ON df.department_id = d.id
+      LEFT JOIN dept_assignments da ON da.department_id = d.id
+      LEFT JOIN dept_att_agg daa ON daa.department_id = d.id
+      LEFT JOIN dept_marks_agg dma ON dma.department_id = d.id
+     WHERE d.college_id = $1
+       AND ($2::bigint IS NULL OR d.id = $2)
+     ORDER BY d.name`,
     [collegeId, departmentId ?? null],
   );
   return rows;
