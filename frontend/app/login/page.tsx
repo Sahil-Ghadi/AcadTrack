@@ -175,11 +175,10 @@ export default function LoginPage() {
                     key={r}
                     type="button"
                     onClick={() => handleRoleSelect(r)}
-                    className={`relative flex items-center justify-center py-2 px-2 rounded-xl text-xs font-semibold cursor-pointer transition-all duration-150 select-none ${
-                      isSelected
-                        ? "bg-[#7150B5] text-white shadow-sm"
-                        : "text-[#777080] hover:text-[#29232F] hover:bg-[#F0E5F7]/50"
-                    }`}
+                    className={`relative flex items-center justify-center py-2 px-2 rounded-xl text-xs font-semibold cursor-pointer transition-all duration-150 select-none ${isSelected
+                      ? "bg-[#7150B5] text-white shadow-sm"
+                      : "text-[#777080] hover:text-[#29232F] hover:bg-[#F0E5F7]/50"
+                      }`}
                   >
                     <span className="truncate">{ROLE_CONFIG[r].label}</span>
                   </button>
