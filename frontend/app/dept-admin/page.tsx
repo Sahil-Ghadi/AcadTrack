@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Navbar from "@/components/Navbar";
-import { apiFetch } from "@/lib/api";
+import AppHeader from "@/components/AppHeader";
+import { apiFetch, getStoredUser } from "@/lib/api";
 import {
   BookOpen,
   Calendar,
@@ -16,6 +16,9 @@ import {
   Trash2,
   FileSpreadsheet,
   Download,
+  Check,
+  ShieldAlert,
+  ChevronDown,
 } from "lucide-react";
 import CsvImportWizard from "@/components/CsvImportWizard";
 
@@ -27,6 +30,7 @@ export default function DeptAdminDashboard() {
   const [slots, setSlots] = useState<any[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [showAddSlot, setShowAddSlot] = useState(false);
+  const [selectedSectionFilter, setSelectedSectionFilter] = useState<string>("all");
   const [slotForm, setSlotForm] = useState({
     subject_assignment_id: "",
     day_of_week: "1",
@@ -118,14 +122,13 @@ export default function DeptAdminDashboard() {
         });
         loadSectionLabGroups(secRes[0].id);
       }
-    } catch {}
-    finally {
+    } catch {} finally {
       setLoadingSlots(false);
       setLoadingSubjects(false);
     }
   }
 
-  // --- Add Timetable Slot with Clash Detection ---
+  // Add Timetable Slot with Clash Detection
   async function handleAddSlot(e: React.FormEvent) {
     e.preventDefault();
     setBannerSuccess(null);
@@ -149,7 +152,6 @@ export default function DeptAdminDashboard() {
       const updated = await apiFetch<any[]>("/api/timetable/slots");
       setSlots(updated);
     } catch (err: any) {
-      // 409 Conflict: room or faculty clash
       setBannerError(err.message || "Failed to schedule slot (possible timetable clash)");
     }
   }
@@ -166,7 +168,7 @@ export default function DeptAdminDashboard() {
     }
   }
 
-  // --- Add Subject ---
+  // Add Subject
   async function handleAddSubject(e: React.FormEvent) {
     e.preventDefault();
     setBannerSuccess(null);
@@ -176,7 +178,7 @@ export default function DeptAdminDashboard() {
       await apiFetch<any>("/api/academic/subjects", {
         method: "POST",
         body: JSON.stringify({
-          department_id: 1, // Computer Engineering CO
+          department_id: 1, // Department scoped
           code: subjectForm.code.toUpperCase(),
           name: subjectForm.name,
           subject_type: subjectForm.subject_type,
@@ -196,7 +198,7 @@ export default function DeptAdminDashboard() {
     }
   }
 
-  // --- Add Assignment ---
+  // Add Assignment
   async function handleAddAssignment(e: React.FormEvent) {
     e.preventDefault();
     if (!currentTerm) return;
@@ -224,7 +226,7 @@ export default function DeptAdminDashboard() {
     }
   }
 
-  // --- Export Timetable CSV ---
+  // Export Timetable CSV
   async function handleExportCsv() {
     if (!currentTerm) {
       setBannerError("No active academic term selected for timetable export");
@@ -277,701 +279,857 @@ export default function DeptAdminDashboard() {
 
   const periods = [1, 2, 3, 4, 5, 6];
 
+  const user = getStoredUser();
+  const termDisplay = currentTerm
+    ? `AY ${currentTerm.academic_year} • ${currentTerm.term_type === "even" ? "Even" : "Odd"} Semester (Active)`
+    : "AY 2026-27 • Active Term";
+
+  // Filter slots by selected section
+  const filteredSlots = selectedSectionFilter === "all"
+    ? slots
+    : slots.filter((s) => String(s.section_id) === selectedSectionFilter);
+
   return (
-    <div className="min-h-screen bg-gray-50 pb-16">
-      <Navbar />
+    <div className="min-h-screen bg-[#FFF9F7] flex flex-col font-sans selection:bg-[#F0E5F7] selection:text-[#55368F]">
+      {/* ================= SHARED APPLICATION HEADER & HORIZONTAL NAV (NO SIDEBAR) ================= */}
+      <AppHeader
+        activeTab={activeTab}
+        onTabChange={(tab) => setActiveTab(tab as any)}
+        termText={termDisplay}
+        statusBadge="Clash Engine Active"
+        navItems={[
+          { key: "timetable", label: "Timetable Grid", icon: Calendar },
+          { key: "subjects", label: "Subjects Curriculum", icon: BookOpen },
+          { key: "assignments", label: "Faculty Assignments", icon: Users },
+          { key: "import", label: "CSV Data Import", icon: FileSpreadsheet },
+        ]}
+      />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Department Administration</h1>
-            <p className="text-xs text-gray-500 mt-1">
-              Computer Engineering &bull; Current Term:{" "}
-              <strong className="text-gray-700">{currentTerm ? `${currentTerm.academic_year} (${currentTerm.term_type})` : "Active"}</strong>
-            </p>
-          </div>
-
+      <main className="w-full flex-1 max-w-[1440px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Top Breadcrumb Context */}
+        <div className="flex items-center justify-between text-xs text-[#777080] mb-4">
           <div className="flex items-center gap-2">
-            {activeTab === "timetable" && (
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={handleExportCsv}
-                  disabled={exportingCsv}
-                  className="px-3.5 py-2 bg-white hover:bg-gray-50 border border-gray-300 text-gray-700 rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-2xs disabled:opacity-50"
-                  title="Export timetable to RFC 4180 CSV with UTF-8 BOM"
-                >
-                  <Download className="w-4 h-4 text-gray-500" />
-                  {exportingCsv ? "Exporting..." : "Export Timetable CSV"}
-                </button>
-                <button
-                  onClick={() => setShowAddSlot(true)}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
-                >
-                  <Plus className="w-4 h-4" /> Add Timetable Slot
-                </button>
-              </div>
-            )}
-
-            {activeTab === "subjects" && (
-              <button
-                onClick={() => setShowAddSubject(true)}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
-              >
-                <Plus className="w-4 h-4" /> Add New Subject
-              </button>
-            )}
-
-            {activeTab === "assignments" && (
-              <button
-                onClick={() => {
-                  if (assignForm.section_id) {
-                    loadSectionLabGroups(assignForm.section_id);
-                  }
-                  setShowAddAssign(true);
-                }}
-                className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold transition flex items-center gap-1.5 shadow-xs"
-              >
-                <Plus className="w-4 h-4" /> Assign Faculty
-              </button>
-            )}
+            <span className="inline-flex items-center gap-1.5 font-medium text-[#7150B5]">
+              <Layers className="w-4 h-4" /> Department Administration
+            </span>
+            <span>/</span>
+            <span className="text-[#29232F] font-semibold">
+              {activeTab === "timetable"
+                ? "Weekly Master Timetable"
+                : activeTab === "subjects"
+                ? "Curriculum & Syllabi"
+                : activeTab === "assignments"
+                ? "Teaching Allocations"
+                : "Departmental Data Import"}
+            </span>
+            <span>/</span>
+            <span className="px-2 py-0.5 rounded-md bg-[#F0E5F7] text-[#55368F] font-semibold text-[11px]">
+              Computer Engineering
+            </span>
+          </div>
+          <div className="hidden sm:flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+            <span className="text-xs font-medium text-[#777080]">Trigger Clash Guard Enabled</span>
           </div>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex border-b border-gray-200 mb-6 gap-2">
-          <button
-            onClick={() => setActiveTab("timetable")}
-            className={`py-3 px-4 font-semibold text-sm border-b-2 flex items-center gap-2 transition ${
-              activeTab === "timetable"
-                ? "border-indigo-600 text-indigo-600"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            <Calendar className="w-4 h-4" /> Timetable Grid & Clash Prevention
-          </button>
-
-          <button
-            onClick={() => setActiveTab("subjects")}
-            className={`py-3 px-4 font-semibold text-sm border-b-2 flex items-center gap-2 transition ${
-              activeTab === "subjects"
-                ? "border-indigo-600 text-indigo-600"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            <BookOpen className="w-4 h-4" /> Subjects Curriculum ({subjects.length})
-          </button>
-
-          <button
-            onClick={() => setActiveTab("assignments")}
-            className={`py-3 px-4 font-semibold text-sm border-b-2 flex items-center gap-2 transition ${
-              activeTab === "assignments"
-                ? "border-indigo-600 text-indigo-600"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            <Users className="w-4 h-4" /> Faculty Assignments ({assignments.length})
-          </button>
-
-          <button
-            onClick={() => setActiveTab("import")}
-            className={`py-3 px-4 font-semibold text-sm border-b-2 flex items-center gap-2 transition ${
-              activeTab === "import"
-                ? "border-indigo-600 text-indigo-600"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            <FileSpreadsheet className="w-4 h-4" /> CSV Data Import
-          </button>
-        </div>
-
-        {/* Notifications */}
+        {/* Global Notifications */}
         {bannerSuccess && (
-          <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm flex items-center gap-2 font-medium">
-            <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
-            {bannerSuccess}
+          <div className="mb-6 p-4 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold flex items-center justify-between shadow-2xs">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span>{bannerSuccess}</span>
+            </div>
+            <button
+              onClick={() => setBannerSuccess(null)}
+              className="text-emerald-700 hover:text-emerald-900 text-sm font-bold"
+            >
+              ✕
+            </button>
           </div>
         )}
 
         {bannerError && (
-          <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm flex items-center gap-2 font-medium">
-            <AlertTriangle className="w-5 h-5 text-red-600 shrink-0" />
-            <span>
-              <strong>Schedule Conflict / Error:</strong> {bannerError}
-            </span>
+          <div className="mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-xs font-semibold flex items-center justify-between shadow-2xs">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-red-600 shrink-0" />
+              <span>{bannerError}</span>
+            </div>
+            <button
+              onClick={() => setBannerError(null)}
+              className="text-red-700 hover:text-red-900 text-sm font-bold"
+            >
+              ✕
+            </button>
           </div>
         )}
 
-        {/* ==================== TAB 1: TIMETABLE GRID ==================== */}
+        {/* ================= TAB 1: TIMETABLE GRID & CLASH PREVENTION ================= */}
         {activeTab === "timetable" && (
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-xs p-6 overflow-hidden">
-            <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-base font-bold text-gray-900">Weekly Department Timetable</h2>
-                <p className="text-xs text-gray-500">
-                  Interval clash prevention enforces faculty, room, section, and lab-group constraints across concurrent sessions.
+          <div className="space-y-6">
+            {/* Operational Header & Controls Strip */}
+            <div className="bg-white rounded-2xl p-6 sm:p-8 border border-[#EAE2EA] shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="max-w-2xl">
+                <div className="inline-flex items-center gap-2 mb-2">
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#F3DDD0] text-[#29232F] font-semibold text-[11px] uppercase tracking-wider">
+                    Timetable Management
+                  </span>
+                  <span className="text-xs text-[#777080]">&bull; Interval Overlap Guard</span>
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-bold text-[#29232F] tracking-tight">
+                  Weekly Master Timetable &amp; Clash Prevention
+                </h1>
+                <p className="text-xs sm:text-sm text-[#777080] mt-1.5 leading-relaxed">
+                  Schedule lectures and laboratory sessions with automatic trigger-enforced room, faculty, section, and lab-group clash detection.
                 </p>
+              </div>
+
+              {/* Action Toolbar */}
+              <div className="flex flex-wrap items-center gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleExportCsv}
+                  disabled={exportingCsv}
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#FFF9F7] border border-[#EAE2EA] text-[#29232F] hover:bg-[#F0E5F7]/40 text-xs font-semibold shadow-2xs transition disabled:opacity-50"
+                >
+                  {exportingCsv ? <Loader2 className="w-4 h-4 animate-spin text-[#7150B5]" /> : <Download className="w-4 h-4 text-[#7150B5]" />}
+                  <span>Export Timetable CSV</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAddSlot(true)}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#7150B5] hover:bg-[#55368F] text-white text-xs font-bold shadow-xs transition"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Timetable Slot</span>
+                </button>
               </div>
             </div>
 
-            {loadingSlots ? (
-              <div className="py-20 text-center text-gray-400">
-                <Loader2 className="w-8 h-8 animate-spin mx-auto text-indigo-600 mb-2" />
-                Loading timetable matrix...
+            {/* Filter Strip & Clash Guard Indicator */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-2xl bg-[#FFFDFB] border border-[#EAE2EA] shadow-xs">
+              {/* Section Filter */}
+              <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-[#FFF9F7] border border-[#EAE2EA]">
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase font-bold text-[#777080] tracking-wider">
+                    Section Filter
+                  </span>
+                  <select
+                    value={selectedSectionFilter}
+                    onChange={(e) => setSelectedSectionFilter(e.target.value)}
+                    className="bg-transparent text-xs font-bold text-[#29232F] outline-none cursor-pointer mt-0.5"
+                  >
+                    <option value="all">All Sections ({slots.length} Slots)</option>
+                    {sections.map((sec) => (
+                      <option key={sec.id} value={String(sec.id)}>
+                        Section {sec.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-            ) : (
-              <div className="overflow-x-auto border border-gray-200 rounded-xl">
-                <table className="min-w-full border-collapse">
-                  <thead className="bg-gray-50">
+
+              {/* View Scope Indicator */}
+              <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-[#FFF9F7] border border-[#EAE2EA]">
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase font-bold text-[#777080] tracking-wider">
+                    Scheduling Scope
+                  </span>
+                  <span className="text-xs font-bold text-[#29232F] mt-0.5">
+                    Theory &bull; Labs &bull; Electives
+                  </span>
+                </div>
+                <Layers className="w-4 h-4 text-[#7150B5]" />
+              </div>
+
+              {/* Clash Engine Status */}
+              <div className="flex items-center justify-between px-3.5 py-2 rounded-xl bg-[#F0E5F7] border border-[#7150B5]/20">
+                <div className="flex items-center gap-2">
+                  <ShieldAlert className="w-4 h-4 text-[#7150B5]" />
+                  <div className="flex flex-col">
+                    <span className="text-[10px] uppercase font-bold text-[#55368F] tracking-wider">
+                      Clash Guard Status
+                    </span>
+                    <span className="text-xs font-bold text-[#7150B5]">
+                      Active &bull; Trigger Enforced
+                    </span>
+                  </div>
+                </div>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white text-[#7150B5] shadow-2xs">
+                  Zero Clashes
+                </span>
+              </div>
+            </div>
+
+            {/* Weekly Timetable Matrix Canvas */}
+            <div className="w-full overflow-x-auto rounded-2xl bg-white border border-[#EAE2EA] shadow-xs">
+              <div className="min-w-[1080px]">
+                {/* Timetable Header Row */}
+                <div className="grid grid-cols-7 bg-[#FFF9F7] border-b border-[#EAE2EA] text-xs font-bold text-[#777080]">
+                  <div className="p-3.5 border-r border-[#EAE2EA] uppercase tracking-wider text-[#29232F]">
+                    Day \ Period
+                  </div>
+                  {periods.map((p) => (
+                    <div key={p} className="p-3 text-center border-r last:border-r-0 border-[#EAE2EA]">
+                      <span className="block font-bold text-[#29232F]">Period {p}</span>
+                      <span className="text-[10px] font-medium text-[#777080] lowercase">
+                        {p === 1
+                          ? "09:00 - 10:00"
+                          : p === 2
+                          ? "10:00 - 11:00"
+                          : p === 3
+                          ? "11:15 - 12:15"
+                          : p === 4
+                          ? "12:15 - 13:15"
+                          : p === 5
+                          ? "14:00 - 15:00"
+                          : "15:00 - 16:00"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Days Rows */}
+                {days.map((d) => (
+                  <div
+                    key={d.num}
+                    className="grid grid-cols-7 border-b last:border-b-0 border-[#EAE2EA] min-h-[90px] hover:bg-[#FFF9F7]/30 transition-colors"
+                  >
+                    {/* Day Name Column */}
+                    <div className="p-3.5 border-r border-[#EAE2EA] bg-[#FFF9F7]/60 flex flex-col justify-center">
+                      <span className="font-bold text-xs text-[#29232F]">{d.name}</span>
+                      <span className="text-[10px] text-[#777080]">Day {d.num}</span>
+                    </div>
+
+                    {/* Periods 1 to 6 */}
+                    {periods.map((p) => {
+                      const periodSlots = filteredSlots.filter(
+                        (s) => s.day_of_week === d.num && s.period_no === p,
+                      );
+
+                      return (
+                        <div
+                          key={p}
+                          className="p-2 border-r last:border-r-0 border-[#EAE2EA] flex flex-col gap-1.5 justify-center relative group"
+                        >
+                          {periodSlots.length === 0 ? (
+                            <span className="text-[11px] text-[#777080]/40 text-center select-none">—</span>
+                          ) : (
+                            periodSlots.map((s) => (
+                              <div
+                                key={s.id}
+                                className={`p-2 rounded-xl text-left border shadow-2xs relative transition hover:shadow-xs ${
+                                  s.lab_group_name
+                                    ? "bg-[#FFFDFB] border-amber-200"
+                                    : "bg-white border-[#EAE2EA]"
+                                }`}
+                              >
+                                <div className="flex items-center justify-between gap-1">
+                                  <span className="font-mono font-bold text-xs text-[#7150B5]">
+                                    {s.subject_code}
+                                  </span>
+                                  {s.lab_group_name ? (
+                                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 border border-amber-200">
+                                      {s.lab_group_name}
+                                    </span>
+                                  ) : (
+                                    <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-[#F0E5F7] text-[#55368F]">
+                                      Sec {s.section_name}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-[11px] text-[#29232F] font-semibold truncate mt-0.5">
+                                  {s.subject_name}
+                                </p>
+                                <div className="flex items-center justify-between text-[10px] text-[#777080] mt-1 pt-1 border-t border-[#EAE2EA]/50">
+                                  <span className="truncate">{s.faculty_name}</span>
+                                  <span className="font-mono font-bold text-[#29232F]">{s.room}</span>
+                                </div>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteSlot(s.id)}
+                                  className="absolute top-1 right-1 opacity-0 group-hover:opacity-100 p-1 text-red-500 hover:text-red-700 rounded transition"
+                                  title="Delete slot"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================= TAB 2: SUBJECTS CURRICULUM ================= */}
+        {activeTab === "subjects" && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl p-6 sm:p-8 border border-[#EAE2EA] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-[#29232F]">Curriculum &amp; Course Syllabi</h2>
+                <p className="text-xs text-[#777080] mt-1">
+                  Manage departmental theory subjects, laboratory modules, assessment maximum marks, and elective courses.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddSubject(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#7150B5] hover:bg-[#55368F] text-white rounded-xl text-xs font-bold shadow-xs transition"
+              >
+                <Plus className="w-4 h-4" /> Add Subject
+              </button>
+            </div>
+
+            {/* Subjects Table */}
+            <div className="bg-white rounded-2xl border border-[#EAE2EA] shadow-xs overflow-hidden">
+              <div className="p-5 border-b border-[#EAE2EA] flex items-center justify-between">
+                <h3 className="font-bold text-sm text-[#29232F]">Curriculum Modules</h3>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#F0E5F7] text-[#55368F]">
+                  {subjects.length} Subjects Registered
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-[#EAE2EA] text-xs">
+                  <thead className="bg-[#FFF9F7]">
                     <tr>
-                      <th className="border-b border-r border-gray-200 p-3 text-left text-xs font-bold text-gray-500 uppercase w-32">
-                        Day / Period
+                      <th className="px-5 py-3 text-left font-bold text-[#777080] uppercase tracking-wider">
+                        Code
                       </th>
-                      {periods.map((p) => (
-                        <th key={p} className="border-b border-r border-gray-200 p-3 text-center text-xs font-bold text-gray-600 uppercase">
-                          Period {p}
-                        </th>
-                      ))}
+                      <th className="px-5 py-3 text-left font-bold text-[#777080] uppercase tracking-wider">
+                        Subject Name
+                      </th>
+                      <th className="px-4 py-3 text-center font-bold text-[#777080] uppercase tracking-wider">
+                        Type
+                      </th>
+                      <th className="px-4 py-3 text-center font-bold text-[#777080] uppercase tracking-wider">
+                        Semester
+                      </th>
+                      <th className="px-4 py-3 text-center font-bold text-[#777080] uppercase tracking-wider">
+                        Category
+                      </th>
+                      <th className="px-4 py-3 text-center font-bold text-[#777080] uppercase tracking-wider">
+                        Max IT Marks
+                      </th>
+                      <th className="px-4 py-3 text-center font-bold text-[#777080] uppercase tracking-wider">
+                        Max Assign Marks
+                      </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200 bg-white">
-                    {days.map((d) => (
-                      <tr key={d.num}>
-                        <td className="border-r border-gray-200 p-3 text-xs font-bold text-gray-900 bg-gray-50/50">
-                          {d.name}
+                  <tbody className="divide-y divide-[#EAE2EA]/70 bg-white">
+                    {subjects.map((sub) => (
+                      <tr key={sub.id} className="hover:bg-[#FFF9F7]/70 transition-colors">
+                        <td className="px-5 py-3.5 font-mono font-bold text-[#7150B5]">{sub.code}</td>
+                        <td className="px-5 py-3.5 font-bold text-[#29232F]">{sub.name}</td>
+                        <td className="px-4 py-3.5 text-center">
+                          {sub.subject_type === "lab" ? (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#F3DDD0] text-[#29232F]">
+                              Laboratory
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#F0E5F7] text-[#55368F]">
+                              Theory
+                            </span>
+                          )}
                         </td>
-                        {periods.map((p) => {
-                          const cellSlots = slots.filter((s) => s.day_of_week === d.num && s.period_no === p);
-                          return (
-                            <td
-                              key={p}
-                              className={`border-r border-gray-100 p-2 text-center min-w-[155px] align-top ${
-                                cellSlots.length > 0 ? "bg-indigo-50/20" : "bg-white"
-                              }`}
-                            >
-                              {cellSlots.length > 0 ? (
-                                <div className="space-y-2">
-                                  {cellSlots.map((slot) => (
-                                    <div
-                                      key={slot.id}
-                                      className="p-2.5 rounded-lg bg-white border border-indigo-100 shadow-2xs text-left relative group hover:border-indigo-300 transition"
-                                    >
-                                      <div className="flex items-center justify-between gap-1">
-                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                          <span className="font-bold text-xs text-indigo-900">{slot.subject_code}</span>
-                                          {slot.lab_group_name && (
-                                            <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                                              Lab {slot.lab_group_name}
-                                            </span>
-                                          )}
-                                        </div>
-                                        <button
-                                          onClick={() => handleDeleteSlot(slot.id)}
-                                          className="text-gray-300 hover:text-red-600 transition"
-                                          title="Delete slot"
-                                        >
-                                          <Trash2 className="w-3 h-3" />
-                                        </button>
-                                      </div>
-                                      <p className="text-[11px] font-medium text-gray-700 truncate mt-0.5">{slot.subject_name}</p>
-                                      <p className="text-[10px] text-gray-500 mt-1">
-                                        Room <strong>{slot.room}</strong> &bull; Sec {slot.section_name}
-                                      </p>
-                                      <p className="text-[10px] text-indigo-600 truncate">{slot.faculty_name}</p>
-                                    </div>
-                                  ))}
-                                </div>
-                              ) : (
-                                <span className="text-gray-200 text-xs">-</span>
-                              )}
-                            </td>
-                          );
-                        })}
+                        <td className="px-4 py-3.5 text-center font-semibold text-[#29232F]">
+                          Sem {sub.semester}
+                        </td>
+                        <td className="px-4 py-3.5 text-center">
+                          {sub.is_elective ? (
+                            <span className="text-[10px] font-semibold text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">
+                              Elective
+                            </span>
+                          ) : (
+                            <span className="text-[10px] text-[#777080]">Core Subject</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3.5 text-center font-mono font-bold text-[#29232F]">
+                          {sub.max_it_marks}
+                        </td>
+                        <td className="px-4 py-3.5 text-center font-mono font-bold text-[#29232F]">
+                          {sub.max_assignment_marks}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            )}
-          </div>
-        )}
-
-        {/* ==================== TAB 2: SUBJECTS ==================== */}
-        {activeTab === "subjects" && (
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
-            <div className="p-6 border-b border-gray-100">
-              <h2 className="text-base font-bold text-gray-900">Curriculum Subjects</h2>
-              <p className="text-xs text-gray-500">Configured theory & lab subjects with component maximum marks.</p>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Code</th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Subject Name</th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Type</th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Semester</th>
-                    <th className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase">Max IT Marks</th>
-                    <th className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase">Max Assign Marks</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 bg-white">
-                  {subjects.map((sub) => (
-                    <tr key={sub.id} className="hover:bg-gray-50/50">
-                      <td className="px-6 py-3 font-mono font-bold text-indigo-700">{sub.code}</td>
-                      <td className="px-6 py-3 font-medium text-gray-900">
-                        {sub.name}
-                        {sub.is_elective && (
-                          <span className="ml-2 px-2 py-0.5 rounded text-[10px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
-                            Elective
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-6 py-3 capitalize text-gray-600">{sub.subject_type}</td>
-                      <td className="px-6 py-3 text-gray-600">{sub.semester}</td>
-                      <td className="px-6 py-3 text-center font-semibold text-gray-800">{sub.max_it_marks}</td>
-                      <td className="px-6 py-3 text-center font-semibold text-gray-800">{sub.max_assignment_marks}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </div>
           </div>
         )}
 
-        {/* ==================== TAB 3: ASSIGNMENTS ==================== */}
+        {/* ================= TAB 3: FACULTY ASSIGNMENTS ================= */}
         {activeTab === "assignments" && (
-          <div className="bg-white rounded-2xl border border-gray-200 shadow-xs overflow-hidden">
-            <div className="p-6 border-b border-gray-100">
-              <h2 className="text-base font-bold text-gray-900">Teaching Allocations</h2>
-              <p className="text-xs text-gray-500">Mapping of faculty to subjects and student sections for the current academic term.</p>
+          <div className="space-y-6">
+            <div className="bg-white rounded-2xl p-6 sm:p-8 border border-[#EAE2EA] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-[#29232F]">Faculty Teaching Allocations</h2>
+                <p className="text-xs text-[#777080] mt-1">
+                  Assign instructors to course sections and laboratory batches for AY 2026-27.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddAssign(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#7150B5] hover:bg-[#55368F] text-white rounded-xl text-xs font-bold shadow-xs transition"
+              >
+                <Plus className="w-4 h-4" /> Assign Faculty
+              </button>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Subject</th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Faculty Member</th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Section</th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Lab Group</th>
-                    <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Academic Term</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 bg-white">
-                  {assignments.map((a) => (
-                    <tr key={a.id} className="hover:bg-gray-50/50">
-                      <td className="px-6 py-3">
-                        <span className="font-mono font-bold text-xs text-indigo-700 block">{a.subject_code}</span>
-                        <span className="font-medium text-gray-900 text-xs">{a.subject_name}</span>
-                      </td>
-                      <td className="px-6 py-3 font-semibold text-gray-800">
-                        {a.faculty_name}{" "}
-                        <span className="text-xs text-gray-400 font-normal">({a.employee_code})</span>
-                      </td>
-                      <td className="px-6 py-3 font-medium text-gray-700">Section {a.section_name}</td>
-                      <td className="px-6 py-3 text-gray-500">{a.lab_group_name || "Entire Section"}</td>
-                      <td className="px-6 py-3 text-xs text-gray-500 font-mono">
-                        {a.academic_year} ({a.term_type})
-                      </td>
+            {/* Assignments Table */}
+            <div className="bg-white rounded-2xl border border-[#EAE2EA] shadow-xs overflow-hidden">
+              <div className="p-5 border-b border-[#EAE2EA] flex items-center justify-between">
+                <h3 className="font-bold text-sm text-[#29232F]">Active Subject Assignments</h3>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-[#F0E5F7] text-[#55368F]">
+                  {assignments.length} Allocations
+                </span>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-[#EAE2EA] text-xs">
+                  <thead className="bg-[#FFF9F7]">
+                    <tr>
+                      <th className="px-5 py-3 text-left font-bold text-[#777080] uppercase tracking-wider">
+                        Subject
+                      </th>
+                      <th className="px-5 py-3 text-left font-bold text-[#777080] uppercase tracking-wider">
+                        Faculty Instructor
+                      </th>
+                      <th className="px-4 py-3 text-center font-bold text-[#777080] uppercase tracking-wider">
+                        Section
+                      </th>
+                      <th className="px-4 py-3 text-center font-bold text-[#777080] uppercase tracking-wider">
+                        Target Allocation
+                      </th>
+                      <th className="px-4 py-3 text-center font-bold text-[#777080] uppercase tracking-wider">
+                        Subject Type
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-[#EAE2EA]/70 bg-white">
+                    {assignments.map((a) => (
+                      <tr key={a.id} className="hover:bg-[#FFF9F7]/70 transition-colors">
+                        <td className="px-5 py-3.5">
+                          <span className="font-mono font-bold text-[#7150B5] block">{a.subject_code}</span>
+                          <span className="font-semibold text-[#29232F]">{a.subject_name}</span>
+                        </td>
+                        <td className="px-5 py-3.5 font-bold text-[#29232F]">
+                          {a.faculty_name}
+                        </td>
+                        <td className="px-4 py-3.5 text-center font-semibold text-[#29232F]">
+                          Section {a.section_name}
+                        </td>
+                        <td className="px-4 py-3.5 text-center">
+                          {a.lab_group_name ? (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                              {a.lab_group_name}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-[#F0E5F7] text-[#55368F]">
+                              Entire Section
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3.5 text-center capitalize text-[#777080]">
+                          {a.subject_type}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}
 
-        {/* ==================== TAB 4: CSV DATA IMPORT ==================== */}
+        {/* ================= TAB 4: DEPARTMENTAL CSV IMPORT ================= */}
         {activeTab === "import" && (
           <div className="space-y-6">
-            <div className="flex items-center gap-3 bg-white p-2 rounded-xl border border-gray-200 shadow-2xs max-w-md">
-              <button
-                onClick={() => setImportType("student")}
-                className={`flex-1 py-2 px-4 rounded-lg font-bold text-xs transition ${
-                  importType === "student"
-                    ? "bg-indigo-600 text-white shadow-xs"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
-              >
-                Import Students
-              </button>
-              <button
-                onClick={() => setImportType("faculty")}
-                className={`flex-1 py-2 px-4 rounded-lg font-bold text-xs transition ${
-                  importType === "faculty"
-                    ? "bg-indigo-600 text-white shadow-xs"
-                    : "text-gray-600 hover:text-gray-900"
-                }`}
-              >
-                Import Faculty
-              </button>
+            <div className="bg-white rounded-2xl p-6 sm:p-8 border border-[#EAE2EA] shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="text-xl font-bold text-[#29232F]">Departmental CSV Data Import</h2>
+                <p className="text-xs text-[#777080] mt-1">
+                  Bulk-import verified student rosters and faculty records strictly scoped to Computer Engineering.
+                </p>
+              </div>
+
+              {/* Entity Type Toggle */}
+              <div className="flex items-center gap-1.5 p-1 bg-[#FFF9F7] rounded-xl border border-[#EAE2EA]">
+                <button
+                  type="button"
+                  onClick={() => setImportType("student")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    importType === "student"
+                      ? "bg-[#7150B5] text-white shadow-2xs"
+                      : "text-[#777080] hover:text-[#29232F]"
+                  }`}
+                >
+                  Import Students
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setImportType("faculty")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                    importType === "faculty"
+                      ? "bg-[#7150B5] text-white shadow-2xs"
+                      : "text-[#777080] hover:text-[#29232F]"
+                  }`}
+                >
+                  Import Faculty
+                </button>
+              </div>
             </div>
 
+            {/* Department-Scoped Dynamic CSV Import Wizard */}
             <CsvImportWizard
               entityType={importType}
-              onComplete={loadAllData}
+              departmentId={user?.departmentId || undefined}
+              onComplete={() => {
+                loadAllData();
+                setBannerSuccess(`Successfully imported ${importType} records into department!`);
+              }}
             />
           </div>
         )}
+      </main>
 
-        {/* Modal: Add Timetable Slot */}
-        {showAddSlot && (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-gray-100">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Add Timetable Slot</h3>
-              <form onSubmit={handleAddSlot} className="space-y-4">
+      {/* ================= ADD TIMETABLE SLOT MODAL ================= */}
+      {showAddSlot && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-[#EAE2EA]">
+            <h3 className="text-base font-bold text-[#29232F] mb-1">Add Timetable Slot</h3>
+            <p className="text-xs text-[#777080] mb-4">
+              Schedule a period with automatic interval clash checking.
+            </p>
+            <form onSubmit={handleAddSlot} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-[#777080] uppercase mb-1">
+                  Subject Assignment
+                </label>
+                <select
+                  required
+                  value={slotForm.subject_assignment_id}
+                  onChange={(e) => setSlotForm({ ...slotForm, subject_assignment_id: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#EAE2EA] rounded-xl text-xs text-[#29232F] outline-none focus:border-[#7150B5] bg-white"
+                >
+                  <option value="">Select subject assignment</option>
+                  {assignments.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.subject_code} - {a.subject_name} ({a.faculty_name}) [Sec {a.section_name}
+                      {a.lab_group_name ? ` - ${a.lab_group_name}` : ""}]
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Subject Assignment</label>
+                  <label className="block text-xs font-bold text-[#777080] uppercase mb-1">Day</label>
                   <select
-                    value={slotForm.subject_assignment_id}
-                    onChange={(e) => setSlotForm({ ...slotForm, subject_assignment_id: e.target.value })}
-                    required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-800"
+                    value={slotForm.day_of_week}
+                    onChange={(e) => setSlotForm({ ...slotForm, day_of_week: e.target.value })}
+                    className="w-full px-3 py-2 border border-[#EAE2EA] rounded-xl text-xs text-[#29232F] outline-none focus:border-[#7150B5] bg-white"
                   >
-                    {assignments.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.subject_code} ({a.faculty_name} - Sec {a.section_name}
-                        {a.lab_group_name ? ` - Group ${a.lab_group_name}` : ""})
+                    {days.map((d) => (
+                      <option key={d.num} value={d.num}>
+                        {d.name}
                       </option>
                     ))}
                   </select>
                 </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Day of Week</label>
-                    <select
-                      value={slotForm.day_of_week}
-                      onChange={(e) => setSlotForm({ ...slotForm, day_of_week: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-800"
-                    >
-                      {days.map((d) => (
-                        <option key={d.num} value={d.num}>
-                          {d.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Period No</label>
-                    <select
-                      value={slotForm.period_no}
-                      onChange={(e) => setSlotForm({ ...slotForm, period_no: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-800"
-                    >
-                      {periods.map((p) => (
-                        <option key={p} value={p}>
-                          Period {p}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Start Time</label>
-                    <input
-                      type="time"
-                      value={slotForm.start_time}
-                      onChange={(e) => setSlotForm({ ...slotForm, start_time: e.target.value })}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-800"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">End Time</label>
-                    <input
-                      type="time"
-                      value={slotForm.end_time}
-                      onChange={(e) => setSlotForm({ ...slotForm, end_time: e.target.value })}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-800"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Room</label>
-                    <input
-                      type="text"
-                      value={slotForm.room}
-                      onChange={(e) => setSlotForm({ ...slotForm, room: e.target.value })}
-                      required
-                      placeholder="R204"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-800"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex justify-end gap-2 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddSlot(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold shadow-xs"
-                  >
-                    Schedule Slot
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        )}
-
-        {/* Modal: Add Subject */}
-        {showAddSubject && (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-gray-100">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Add Subject to Curriculum</h3>
-              <form onSubmit={handleAddSubject} className="space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Code</label>
-                    <input
-                      type="text"
-                      value={subjectForm.code}
-                      onChange={(e) => setSubjectForm({ ...subjectForm, code: e.target.value })}
-                      required
-                      placeholder="CO504"
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-800 uppercase"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Semester</label>
-                    <input
-                      type="number"
-                      min="1"
-                      max="12"
-                      value={subjectForm.semester}
-                      onChange={(e) => setSubjectForm({ ...subjectForm, semester: e.target.value })}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-800"
-                    />
-                  </div>
-                </div>
-
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Subject Name</label>
+                  <label className="block text-xs font-bold text-[#777080] uppercase mb-1">Period</label>
+                  <select
+                    value={slotForm.period_no}
+                    onChange={(e) => setSlotForm({ ...slotForm, period_no: e.target.value })}
+                    className="w-full px-3 py-2 border border-[#EAE2EA] rounded-xl text-xs text-[#29232F] outline-none focus:border-[#7150B5] bg-white"
+                  >
+                    {periods.map((p) => (
+                      <option key={p} value={p}>
+                        Period {p}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="block text-xs font-bold text-[#777080] uppercase mb-1">Start</label>
                   <input
-                    type="text"
-                    value={subjectForm.name}
-                    onChange={(e) => setSubjectForm({ ...subjectForm, name: e.target.value })}
+                    type="time"
                     required
-                    placeholder="Theory of Computation"
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-800"
+                    value={slotForm.start_time}
+                    onChange={(e) => setSlotForm({ ...slotForm, start_time: e.target.value })}
+                    className="w-full px-2 py-2 border border-[#EAE2EA] rounded-xl text-xs text-[#29232F] outline-none focus:border-[#7150B5]"
                   />
                 </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Type</label>
-                    <select
-                      value={subjectForm.subject_type}
-                      onChange={(e) => setSubjectForm({ ...subjectForm, subject_type: e.target.value as any })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-800"
-                    >
-                      <option value="theory">Theory</option>
-                      <option value="lab">Lab</option>
-                    </select>
-                  </div>
-
-                  <div className="flex items-center pt-5">
-                    <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-gray-700">
-                      <input
-                        type="checkbox"
-                        checked={subjectForm.is_elective}
-                        onChange={(e) => setSubjectForm({ ...subjectForm, is_elective: e.target.checked })}
-                        className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4"
-                      />
-                      Is Elective Subject
-                    </label>
-                  </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#777080] uppercase mb-1">End</label>
+                  <input
+                    type="time"
+                    required
+                    value={slotForm.end_time}
+                    onChange={(e) => setSlotForm({ ...slotForm, end_time: e.target.value })}
+                    className="w-full px-2 py-2 border border-[#EAE2EA] rounded-xl text-xs text-[#29232F] outline-none focus:border-[#7150B5]"
+                  />
                 </div>
-
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Max IT Marks</label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={subjectForm.max_it_marks}
-                      onChange={(e) => setSubjectForm({ ...subjectForm, max_it_marks: e.target.value })}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-800"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Max Assignment</label>
-                    <input
-                      type="number"
-                      min="1"
-                      value={subjectForm.max_assignment_marks}
-                      onChange={(e) => setSubjectForm({ ...subjectForm, max_assignment_marks: e.target.value })}
-                      required
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-800"
-                    />
-                  </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#777080] uppercase mb-1">Room</label>
+                  <input
+                    type="text"
+                    required
+                    value={slotForm.room}
+                    onChange={(e) => setSlotForm({ ...slotForm, room: e.target.value })}
+                    placeholder="e.g. L101"
+                    className="w-full px-2 py-2 border border-[#EAE2EA] rounded-xl text-xs text-[#29232F] outline-none focus:border-[#7150B5]"
+                  />
                 </div>
+              </div>
 
-                <div className="flex justify-end gap-2 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddSubject(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold shadow-xs"
-                  >
-                    Save Subject
-                  </button>
-                </div>
-              </form>
-            </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddSlot(false)}
+                  className="px-4 py-2 border border-[#EAE2EA] rounded-xl text-xs font-semibold text-[#777080] hover:bg-[#FFF9F7]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#7150B5] hover:bg-[#55368F] text-white rounded-xl text-xs font-bold shadow-xs"
+                >
+                  Schedule Slot
+                </button>
+              </div>
+            </form>
           </div>
-        )}
+        </div>
+      )}
 
-        {/* Modal: Add Faculty Assignment */}
-        {showAddAssign && (
-          <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl border border-gray-100">
-              <h3 className="text-lg font-bold text-gray-900 mb-4">Assign Subject to Faculty</h3>
-              <form onSubmit={handleAddAssignment} className="space-y-4">
+      {/* ================= ADD SUBJECT MODAL ================= */}
+      {showAddSubject && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-[#EAE2EA]">
+            <h3 className="text-base font-bold text-[#29232F] mb-1">Add Curriculum Subject</h3>
+            <p className="text-xs text-[#777080] mb-4">Define a new course module with assessment criteria.</p>
+            <form onSubmit={handleAddSubject} className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Subject</label>
-                  <select
-                    value={assignForm.subject_id}
-                    onChange={(e) => {
-                      const newSubId = e.target.value;
-                      const sub = subjects.find((s) => String(s.id) === newSubId);
-                      setAssignForm((prev) => ({
-                        ...prev,
-                        subject_id: newSubId,
-                        lab_group_id: sub?.subject_type === "theory" ? "" : prev.lab_group_id,
-                      }));
-                    }}
+                  <label className="block text-xs font-bold text-[#777080] uppercase mb-1">Code</label>
+                  <input
+                    type="text"
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-800"
+                    value={subjectForm.code}
+                    onChange={(e) => setSubjectForm({ ...subjectForm, code: e.target.value })}
+                    placeholder="e.g. CS501"
+                    className="w-full px-3 py-2 border border-[#EAE2EA] rounded-xl text-xs text-[#29232F] font-mono outline-none focus:border-[#7150B5]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-[#777080] uppercase mb-1">Semester</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="8"
+                    required
+                    value={subjectForm.semester}
+                    onChange={(e) => setSubjectForm({ ...subjectForm, semester: e.target.value })}
+                    className="w-full px-3 py-2 border border-[#EAE2EA] rounded-xl text-xs text-[#29232F] outline-none focus:border-[#7150B5]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#777080] uppercase mb-1">Subject Name</label>
+                <input
+                  type="text"
+                  required
+                  value={subjectForm.name}
+                  onChange={(e) => setSubjectForm({ ...subjectForm, name: e.target.value })}
+                  placeholder="e.g. Database Management Systems"
+                  className="w-full px-3 py-2 border border-[#EAE2EA] rounded-xl text-xs text-[#29232F] outline-none focus:border-[#7150B5]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-[#777080] uppercase mb-1">Type</label>
+                  <select
+                    value={subjectForm.subject_type}
+                    onChange={(e) => setSubjectForm({ ...subjectForm, subject_type: e.target.value as any })}
+                    className="w-full px-3 py-2 border border-[#EAE2EA] rounded-xl text-xs text-[#29232F] outline-none focus:border-[#7150B5] bg-white"
                   >
-                    {subjects.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.code} - {s.name} ({s.subject_type.toUpperCase()})
-                      </option>
-                    ))}
+                    <option value="theory">Theory</option>
+                    <option value="lab">Laboratory</option>
                   </select>
                 </div>
 
+                <div className="flex items-center pt-5">
+                  <input
+                    type="checkbox"
+                    id="isElectiveCheckbox"
+                    checked={subjectForm.is_elective}
+                    onChange={(e) => setSubjectForm({ ...subjectForm, is_elective: e.target.checked })}
+                    className="h-4 w-4 rounded border-[#EAE2EA] text-[#7150B5] focus:ring-[#7150B5]/30 cursor-pointer"
+                  />
+                  <label htmlFor="isElectiveCheckbox" className="ml-2 text-xs font-bold text-[#29232F] cursor-pointer">
+                    Is Elective Course
+                  </label>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Faculty Member</label>
-                  <select
-                    value={assignForm.faculty_id}
-                    onChange={(e) => setAssignForm({ ...assignForm, faculty_id: e.target.value })}
+                  <label className="block text-xs font-bold text-[#777080] uppercase mb-1">Max IT Marks</label>
+                  <input
+                    type="number"
+                    min="1"
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-800"
-                  >
-                    {facultyList.map((f) => (
-                      <option key={f.id} value={f.id}>
-                        {f.full_name} ({f.employee_code})
-                      </option>
-                    ))}
-                  </select>
+                    value={subjectForm.max_it_marks}
+                    onChange={(e) => setSubjectForm({ ...subjectForm, max_it_marks: e.target.value })}
+                    className="w-full px-3 py-2 border border-[#EAE2EA] rounded-xl text-xs text-[#29232F] outline-none focus:border-[#7150B5]"
+                  />
                 </div>
-
                 <div>
-                  <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">Section</label>
-                  <select
-                    value={assignForm.section_id}
-                    onChange={(e) => {
-                      const newSecId = e.target.value;
-                      setAssignForm({ ...assignForm, section_id: newSecId, lab_group_id: "" });
-                      loadSectionLabGroups(newSecId);
-                    }}
+                  <label className="block text-xs font-bold text-[#777080] uppercase mb-1">Max Assign Marks</label>
+                  <input
+                    type="number"
+                    min="1"
                     required
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-800"
-                  >
-                    {sections.map((sec) => (
-                      <option key={sec.id} value={sec.id}>
-                        Section {sec.name} ({sec.program_name})
-                      </option>
-                    ))}
-                  </select>
+                    value={subjectForm.max_assignment_marks}
+                    onChange={(e) => setSubjectForm({ ...subjectForm, max_assignment_marks: e.target.value })}
+                    className="w-full px-3 py-2 border border-[#EAE2EA] rounded-xl text-xs text-[#29232F] outline-none focus:border-[#7150B5]"
+                  />
                 </div>
+              </div>
 
-                {/* Lab Group Selection */}
-                {(() => {
-                  const currentSub = subjects.find((s) => String(s.id) === String(assignForm.subject_id));
-                  const isLab = currentSub?.subject_type === "lab";
-                  if (isLab) {
-                    return (
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-700 uppercase mb-1">
-                          Lab Group Assignment
-                        </label>
-                        <select
-                          value={assignForm.lab_group_id}
-                          onChange={(e) => setAssignForm({ ...assignForm, lab_group_id: e.target.value })}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-800"
-                        >
-                          <option value="">Entire Section (All Groups)</option>
-                          {sectionLabGroups.map((lg) => (
-                            <option key={lg.id} value={lg.id}>
-                              Group {lg.name}
-                            </option>
-                          ))}
-                        </select>
-                        <p className="text-[11px] text-gray-500 mt-1">
-                          {sectionLabGroups.length === 0
-                            ? "No lab groups configured for this section. Assignment will apply to the entire section."
-                            : "Select a specific lab group for concurrent scheduling, or assign to the entire section."}
-                        </p>
-                      </div>
-                    );
-                  }
-                  return (
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-400 uppercase mb-1">
-                        Lab Group Assignment
-                      </label>
-                      <div className="w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-500">
-                        Not applicable (Theory subjects apply to the entire section)
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                <div className="flex justify-end gap-2 pt-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowAddAssign(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-bold shadow-xs"
-                  >
-                    Create Assignment
-                  </button>
-                </div>
-              </form>
-            </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddSubject(false)}
+                  className="px-4 py-2 border border-[#EAE2EA] rounded-xl text-xs font-semibold text-[#777080] hover:bg-[#FFF9F7]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#7150B5] hover:bg-[#55368F] text-white rounded-xl text-xs font-bold shadow-xs"
+                >
+                  Add Subject
+                </button>
+              </div>
+            </form>
           </div>
-        )}
-      </main>
+        </div>
+      )}
+
+      {/* ================= ADD FACULTY ASSIGNMENT MODAL ================= */}
+      {showAddAssign && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-[#EAE2EA]">
+            <h3 className="text-base font-bold text-[#29232F] mb-1">Assign Subject to Faculty</h3>
+            <p className="text-xs text-[#777080] mb-4">Allocate teaching duties for the active term.</p>
+            <form onSubmit={handleAddAssignment} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-[#777080] uppercase mb-1">Subject</label>
+                <select
+                  required
+                  value={assignForm.subject_id}
+                  onChange={(e) => setAssignForm({ ...assignForm, subject_id: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#EAE2EA] rounded-xl text-xs text-[#29232F] outline-none focus:border-[#7150B5] bg-white"
+                >
+                  {subjects.map((sub) => (
+                    <option key={sub.id} value={sub.id}>
+                      {sub.code} - {sub.name} ({sub.subject_type})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#777080] uppercase mb-1">Faculty Member</label>
+                <select
+                  required
+                  value={assignForm.faculty_id}
+                  onChange={(e) => setAssignForm({ ...assignForm, faculty_id: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#EAE2EA] rounded-xl text-xs text-[#29232F] outline-none focus:border-[#7150B5] bg-white"
+                >
+                  {facultyList.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.full_name} ({f.employee_code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-[#777080] uppercase mb-1">Class Section</label>
+                <select
+                  required
+                  value={assignForm.section_id}
+                  onChange={(e) => {
+                    const secId = e.target.value;
+                    setAssignForm({ ...assignForm, section_id: secId, lab_group_id: "" });
+                    loadSectionLabGroups(secId);
+                  }}
+                  className="w-full px-3 py-2 border border-[#EAE2EA] rounded-xl text-xs text-[#29232F] outline-none focus:border-[#7150B5] bg-white"
+                >
+                  {sections.map((sec) => (
+                    <option key={sec.id} value={sec.id}>
+                      Section {sec.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Lab Group Allocation */}
+              <div>
+                <label className="block text-xs font-bold text-[#777080] uppercase mb-1">
+                  Lab Group Allocation (Optional)
+                </label>
+                <select
+                  value={assignForm.lab_group_id}
+                  onChange={(e) => setAssignForm({ ...assignForm, lab_group_id: e.target.value })}
+                  className="w-full px-3 py-2 border border-[#EAE2EA] rounded-xl text-xs text-[#29232F] outline-none focus:border-[#7150B5] bg-white"
+                >
+                  <option value="">Entire Section (All Groups / Theory)</option>
+                  {sectionLabGroups.map((lg) => (
+                    <option key={lg.id} value={lg.id}>
+                      {lg.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddAssign(false)}
+                  className="px-4 py-2 border border-[#EAE2EA] rounded-xl text-xs font-semibold text-[#777080] hover:bg-[#FFF9F7]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-[#7150B5] hover:bg-[#55368F] text-white rounded-xl text-xs font-bold shadow-xs"
+                >
+                  Create Assignment
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

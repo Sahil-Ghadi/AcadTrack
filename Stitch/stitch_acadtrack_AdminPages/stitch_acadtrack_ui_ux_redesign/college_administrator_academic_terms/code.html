@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><title>AcadTrack - Attendance &amp; Marks Academic Management System</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "inverse-on-surface": "#f9edfd", "primary-fixed-dim": "#d1bcff", "on-secondary-fixed-variant": "#51443c", "surface-container-lowest": "#ffffff", "on-error": "#ffffff", "secondary-container": "#f2dfd3", "on-secondary": "#ffffff", "on-primary-container": "#fffbff", "surface-tint": "#6a4cad", "on-tertiary": "#ffffff", "tertiary-fixed": "#e8defe", "on-surface": "#1f1924", "on-surface-variant": "#494551", "on-secondary-container": "#6f6258", "secondary-fixed": "#f2dfd3", "surface-container": "#f6eafa", "primary": "#674aab", "tertiary": "#5f5873", "on-primary-fixed": "#24005b", "surface-bright": "#fff7fe", "on-primary-fixed-variant": "#513394", "inverse-surface": "#352e3a", "tertiary-fixed-dim": "#cbc2e1", "surface": "#fff7fe", "surface-container-low": "#fcf0ff", "on-tertiary-container": "#fffbff", "background": "#fff7fe", "secondary-fixed-dim": "#d5c3b8", "on-primary": "#ffffff", "on-secondary-fixed": "#231a13", "tertiary-container": "#78718c", "surface-container-highest": "#ebdfef", "error-container": "#ffdad6", "inverse-primary": "#d1bcff", "on-error-container": "#93000a", "on-background": "#1f1924", "secondary": "#695c53", "on-tertiary-fixed": "#1d182f", "surface-variant": "#ebdfef", "surface-dim": "#e2d6e6", "on-tertiary-fixed-variant": "#49435c", "surface-container-high": "#f0e4f4", "primary-fixed": "#e9ddff", "error": "#ba1a1a", "primary-container": "#8163c5", "outline-variant": "#cbc4d3", "outline": "#7a7583" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "margin": "1rem", "margin-tablet": "1.5rem", "margin-desktop": "2.5rem", "gutter-desktop": "1.5rem", "space-lg": "1.5rem", "gutter": "1.25rem", "space-xl": "2.5rem", "space-xs": "0.25rem", "space-sm": "0.5rem", "space-md": "1rem" }, "fontFamily": { "body-sm": [ "Inter" ], "headline-lg": [ "Geist" ], "headline-sm": [ "Geist" ], "headline-xl": [ "Geist" ], "body-lg": [ "Inter" ], "headline-lg-mobile": [ "Geist" ], "headline-xl-mobile": [ "Geist" ], "headline-md": [ "Geist" ], "label-sm": [ "Inter" ], "body-md": [ "Inter" ], "label-md": [ "Inter" ] }, "fontSize": { "body-sm": [ "12px", { "lineHeight": "18px", "fontWeight": "400" } ], "headline-lg": [ "32px", { "lineHeight": "40px", "letterSpacing": "-0.015em", "fontWeight": "600" } ], "headline-sm": [ "20px", { "lineHeight": "28px", "letterSpacing": "-0.005em", "fontWeight": "500" } ], "headline-xl": [ "40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "body-lg": [ "16px", { "lineHeight": "24px", "fontWeight": "400" } ], "headline-lg-mobile": [ "24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" } ], "headline-xl-mobile": [ "30px", { "lineHeight": "38px", "letterSpacing": "-0.015em", "fontWeight": "600" } ], "headline-md": [ "24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "500" } ], "label-sm": [ "11px", { "lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "600" } ], "body-md": [ "14px", { "lineHeight": "20px", "fontWeight": "400" } ], "label-md": [ "13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500" } ] } } } };</script></head><body class="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col"><header class="fixed top-0 left-0 w-full z-50 bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-28 max-w-[1440px] mx-auto px-margin-desktop flex flex-col justify-between"><div class="h-16 flex items-center justify-between border-b border-surface-container-high/60"><div class="flex items-center gap-space-lg"><div class="flex items-center gap-space-sm"><img alt="AcadTrack Monogram" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/ALJJyrA7r2T_oBnBYMtiYpIZdqRRZlVgpE2TYhBeG_sdSac5OY87kKszdWG-uuDhxQS3svTI31_70HLWW6mCG5pvXz6cWvl1n7-uT-ajP3Y5QiHpa-qWZ-CvCLJQwK8p6_PYKmDO23u5jpcH7YyfRChWvnVY7DLL64cPDKiutS3LfHw4CtNvP6dw-OZ3omDlkDb_nG2TJWTfsM9rVAPcyVupKzfb_YzmX1kElMFZYbgzn4k"/><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-on-surface leading-none font-semibold">AcadTrack</span><span class="font-label-sm text-label-sm text-on-surface-variant tracking-normal">Attendance &amp; Marks System</span></div></div><div class="h-5 w-px bg-surface-variant"></div><div class="inline-flex items-center gap-space-xs px-3 py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed"><span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span><span class="font-label-sm text-label-sm font-semibold">AY 2024-25 • Even Semester (Active)</span></div></div><div class="flex items-center gap-space-md"><div class="flex items-center gap-space-sm"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-primary-fixed" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbquz_Suy7hhbXc_faxutEK-_3-MTbi4L-6quyUFBE1_sCm0ZQrVTtcWUzgQHEOtCy0eqNTUGE21-MVqV3fmCznbaQcX7fBFIpjDMbcaVwf3Xhx1RIcaPPx6EicEJ3e05Ji-h_QEe8hKVTecm-PnSm0PgGL3RuCl96xaaX8dGA7MoL7REtScH3LTtEh8G_P_TgvUmuj5NouWevJG6WWJ7R1xOP7T5Zt-_w3xKWtA"/><div class="flex flex-col text-right"><span class="font-body-sm text-body-sm text-on-surface font-medium leading-tight">dean.academics@university.edu</span><div class="flex justify-end mt-0.5"><span class="inline-flex items-center px-space-xs py-0.5 rounded bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-label-sm">College Administrator</span></div></div></div><div class="h-6 w-px bg-surface-variant mx-space-xs"></div><button class="flex items-center justify-center p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Sign out of system" type="button"><span class="material-symbols-outlined text-[20px]">logout</span></button></div></div><div class="h-12 flex items-center justify-between"><nav class="flex items-center gap-space-sm h-full" data-active-classes="text-primary font-semibold border-b-2 border-primary bg-surface-container-low"><a class="h-full inline-flex items-center px-space-md text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface hover:bg-surface-container-low" data-path="college-analytics" href="#">College Analytics</a><a class="h-full inline-flex items-center px-space-md text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface hover:bg-surface-container-low" data-path="hierarchy-and-structure" href="#">Hierarchy &amp; Structure</a><a aria-current="page" class="h-full inline-flex items-center px-space-md transition-colors text-primary font-semibold border-b-2 border-primary bg-surface-container-low" data-path="academic-terms" href="#">Academic Terms</a><a class="h-full inline-flex items-center px-space-md text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface hover:bg-surface-container-low" data-path="threshold-settings" href="#">Threshold Settings</a><a class="h-full inline-flex items-center px-space-md text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface hover:bg-surface-container-low" data-path="csv-data-import" href="#">CSV Data Import</a></nav><div class="flex items-center gap-space-xs text-on-surface-variant font-label-sm text-label-sm"><span class="material-symbols-outlined text-[16px]">lock_clock</span><span>Auto-sync enabled</span></div></div></div></header><main class="w-full pt-28 bg-surface flex-1 max-w-[1440px] mx-auto px-margin-desktop"><div class="flex flex-col w-full">
+<!-- Top Context Header & Actions Bar -->
+<div class="w-full flex flex-col md:flex-row md:items-end justify-between gap-space-lg pb-space-lg pt-space-md">
+<div class="flex flex-col gap-space-xs max-w-2xl">
+<div class="flex items-center gap-space-xs text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[15px] text-primary">calendar_month</span>
+<span class="uppercase tracking-wider">Academic Governance</span>
+<span class="text-outline-variant font-body-sm">/</span>
+<span class="text-on-surface font-semibold">Term Scheduling</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight font-semibold">
+        Academic Terms &amp; Calendar
+      </h1>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+        Define academic years, semester terms, instructional periods, and active session states across degree programs.
+      </p>
+</div>
+<!-- Quick Action Controls -->
+<div class="flex items-center gap-space-sm self-start md:self-auto flex-wrap">
+<button class="inline-flex items-center gap-space-xs px-space-md py-2.5 rounded-lg bg-surface-container-high text-on-surface hover:bg-surface-container-highest transition-all duration-200 font-label-md text-label-md shadow-sm" id="archiveHistoryBtn" type="button">
+<span class="material-symbols-outlined text-[18px] text-tertiary">history_toggle_off</span>
+<span>Archive Term History</span>
+</button>
+<button class="inline-flex items-center gap-space-xs px-space-lg py-2.5 rounded-lg bg-primary text-on-primary hover:bg-primary-container active:scale-[0.98] transition-all duration-200 font-label-md text-label-md font-medium shadow-sm" id="createTermBtn" type="button">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+<span>Create New Academic Term</span>
+</button>
+</div>
+</div>
+<!-- Prominent Active Term Banner -->
+<div class="w-full mb-space-xl relative overflow-hidden rounded-xl bg-primary-fixed shadow-sm">
+<div class="absolute -right-8 -top-8 w-48 h-48 rounded-full bg-primary/10 blur-2xl pointer-events-none"></div>
+<div class="absolute left-1/3 -bottom-12 w-64 h-64 rounded-full bg-secondary-fixed/50 blur-3xl pointer-events-none"></div>
+<div class="relative p-space-lg md:p-space-xl flex flex-col lg:flex-row lg:items-center justify-between gap-space-lg">
+<div class="flex flex-col gap-space-sm max-w-3xl">
+<div class="flex items-center gap-space-sm flex-wrap">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-lowest text-on-surface font-label-sm text-label-sm shadow-xs font-semibold">
+<span class="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
+            Active &amp; Enforcing Attendance
+          </span>
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[14px]">lock</span>
+            Default System-Wide Term
+          </span>
+<span class="font-body-sm text-body-sm text-on-primary-fixed-variant">ID: AY2425-SEM-EVN</span>
+</div>
+<div class="mt-space-xs">
+<h2 class="font-headline-md text-headline-md text-on-primary-fixed font-semibold tracking-tight">
+            Current Active Term: Academic Year 2024–25 — Even Semester
+          </h2>
+<p class="font-body-md text-body-md text-on-primary-fixed-variant mt-1">
+            Duration: <strong class="font-medium text-on-surface">January 6, 2025 to May 24, 2025</strong> • Teaching Days: <strong class="font-medium text-on-surface">92 Scheduled</strong> • Currently in <strong class="font-medium text-on-surface">Instructional Week 14</strong>
+</p>
+</div>
+<!-- Instructional Progress Bar Micro-element -->
+<div class="mt-space-sm w-full max-w-xl">
+<div class="flex items-center justify-between text-on-primary-fixed-variant font-label-sm text-label-sm mb-1.5">
+<span>Term Progression (Week 14 of 18)</span>
+<span class="font-semibold text-on-surface">78% Elapsed</span>
+</div>
+<div class="w-full h-2 rounded-full bg-surface-container-lowest/70 overflow-hidden p-0.5">
+<div class="h-full rounded-full bg-primary transition-all duration-500" style="width: 78%;"></div>
+</div>
+</div>
+</div>
+<!-- Quick Metrics Grid for Active Term -->
+<div class="flex items-center gap-space-md flex-wrap lg:flex-nowrap bg-surface-container-lowest/80 backdrop-blur-sm p-space-md rounded-xl shadow-xs">
+<div class="flex flex-col px-space-sm">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Enrolled</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold tracking-tight">3,842</span>
+<span class="font-body-sm text-body-sm text-emerald-700 flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[14px]">trending_up</span> 99.4% Valid
+          </span>
+</div>
+<div class="h-10 w-px bg-surface-container-highest"></div>
+<div class="flex flex-col px-space-sm">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Daily Classes</span>
+<span class="font-headline-sm text-headline-sm text-on-surface font-semibold tracking-tight">164</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Active slots</span>
+</div>
+<div class="h-10 w-px bg-surface-container-highest"></div>
+<div class="flex flex-col px-space-sm">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Audit Lock</span>
+<span class="font-headline-sm text-headline-sm text-primary font-semibold tracking-tight">18 Days</span>
+<span class="font-body-sm text-body-sm text-tertiary">To Freeze</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Main Asymmetric Layout: Table Registry (8 Cols) + Milestones Sidebar (4 Cols) -->
+<div class="w-full grid grid-cols-1 lg:grid-cols-12 gap-space-xl items-start">
+<!-- Left Column: Terms Register (Span 8) -->
+<div class="lg:col-span-8 flex flex-col gap-space-md">
+<!-- Sub-filter / Segmented Controls -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-space-sm px-space-xs">
+<div class="flex items-center gap-space-xs bg-surface-container-high p-1 rounded-lg">
+<button class="term-filter-tab px-space-md py-1.5 rounded bg-surface-container-lowest text-primary font-label-md text-label-md font-semibold shadow-xs" type="button">
+            All Academic Cycles (5)
+          </button>
+<button class="term-filter-tab px-space-md py-1.5 rounded text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-colors" type="button">
+            Current &amp; Upcoming (2)
+          </button>
+<button class="term-filter-tab px-space-md py-1.5 rounded text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-colors" type="button">
+            Archived Ledgers (3)
+          </button>
+</div>
+<div class="flex items-center gap-space-xs text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px]">verified</span>
+<span>Ledgers Cryptographically Signed</span>
+</div>
+</div>
+<!-- Tabular Container -->
+<div class="w-full bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden flex flex-col">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low text-on-surface-variant font-label-sm text-label-sm uppercase tracking-wider">
+<th class="py-3.5 px-space-md">Academic Year</th>
+<th class="py-3.5 px-space-md">Term / Semester</th>
+<th class="py-3.5 px-space-sm text-center">Type</th>
+<th class="py-3.5 px-space-md">Period</th>
+<th class="py-3.5 px-space-sm text-center">Weeks</th>
+<th class="py-3.5 px-space-md text-right">Students</th>
+<th class="py-3.5 px-space-md">System Status</th>
+<th class="py-3.5 px-space-md text-right">Actions</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container">
+<!-- Row 1: Active Even 2024-25 -->
+<tr class="bg-secondary-fixed/20 hover:bg-secondary-fixed/40 transition-colors group">
+<td class="py-4 px-space-md font-medium text-on-surface font-body-md text-body-md">
+<div class="flex items-center gap-2">
+<span class="w-1.5 h-6 rounded-full bg-primary"></span>
+<span class="font-semibold text-primary">2024–25</span>
+</div>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex flex-col">
+<span class="font-medium text-on-surface font-body-md text-body-md">Even Semester</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Semesters II, IV, VI, VIII</span>
+</div>
+</td>
+<td class="py-4 px-space-sm text-center">
+<span class="inline-block px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold">
+                    Even
+                  </span>
+</td>
+<td class="py-4 px-space-md font-body-sm text-body-sm text-on-surface">
+<div class="flex flex-col">
+<span>Jan 06, 2025</span>
+<span class="text-on-surface-variant">May 24, 2025</span>
+</div>
+</td>
+<td class="py-4 px-space-sm text-center font-body-md text-body-md font-medium text-on-surface">
+                  18
+                </td>
+<td class="py-4 px-space-md text-right font-headline-sm text-headline-sm font-semibold text-on-surface">
+                  3,842
+                </td>
+<td class="py-4 px-space-md">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 font-label-sm text-label-sm font-semibold">
+<span class="w-1.5 h-1.5 rounded-full bg-emerald-600 animate-pulse"></span>
+                    Active (Current)
+                  </span>
+</td>
+<td class="py-4 px-space-md text-right">
+<div class="inline-flex items-center justify-end gap-1.5">
+<button class="p-1.5 rounded-md hover:bg-surface-container-high text-primary hover:text-on-primary-fixed-variant transition-colors" title="Configure Term Deadlines" type="button">
+<span class="material-symbols-outlined text-[18px]">rule</span>
+</button>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="View Master Timetable" type="button">
+<span class="material-symbols-outlined text-[18px]">table_chart</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 2: Completed Odd 2024-25 -->
+<tr class="hover:bg-surface-container-low transition-colors">
+<td class="py-4 px-space-md font-medium text-on-surface font-body-md text-body-md">
+                  2024–25
+                </td>
+<td class="py-4 px-space-md">
+<div class="flex flex-col">
+<span class="font-medium text-on-surface font-body-md text-body-md">Odd Semester</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Semesters I, III, V, VII</span>
+</div>
+</td>
+<td class="py-4 px-space-sm text-center">
+<span class="inline-block px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm font-semibold">
+                    Odd
+                  </span>
+</td>
+<td class="py-4 px-space-md font-body-sm text-body-sm text-on-surface">
+<div class="flex flex-col">
+<span>Aug 01, 2024</span>
+<span class="text-on-surface-variant">Dec 20, 2024</span>
+</div>
+</td>
+<td class="py-4 px-space-sm text-center font-body-md text-body-md text-on-surface-variant">
+                  18
+                </td>
+<td class="py-4 px-space-md text-right font-body-md text-body-md font-medium text-on-surface">
+                  3,810
+                </td>
+<td class="py-4 px-space-md">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[12px]">lock</span>
+                    Completed &amp; Locked
+                  </span>
+</td>
+<td class="py-4 px-space-md text-right">
+<div class="inline-flex items-center justify-end gap-1.5">
+<button class="p-1.5 rounded-md hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="View Archive Records" type="button">
+<span class="material-symbols-outlined text-[18px]">inventory_2</span>
+</button>
+<button class="p-1.5 rounded-md hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-colors" title="Export Final Marks Ledger" type="button">
+<span class="material-symbols-outlined text-[18px]">download</span>
+</button>
+</div>
+</td>
+</tr>
+<!-- Row 3: Archived Even 2023-24 -->
+<tr class="hover:bg-surface-container-low transition-colors opacity-90">
+<td class="py-4 px-space-md font-medium text-on-surface-variant font-body-md text-body-md">
+                  2023–24
+                </td>
+<td class="py-4 px-space-md">
+<div class="flex flex-col">
+<span class="font-medium text-on-surface-variant font-body-md text-body-md">Even Semester</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Semesters II, IV, VI, VIII</span>
+</div>
+</td>
+<td class="py-4 px-space-sm text-center">
+<span class="inline-block px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">
+                    Even
+                  </span>
+</td>
+<td class="py-4 px-space-md font-body-sm text-body-sm text-on-surface-variant">
+<div class="flex flex-col">
+<span>Jan 08, 2024</span>
+<span>May 25, 2024</span>
+</div>
+</td>
+<td class="py-4 px-space-sm text-center font-body-md text-body-md text-on-surface-variant">
+                  18
+                </td>
+<td class="py-4 px-space-md text-right font-body-md text-body-md text-on-surface-variant">
+                  3,650
+                </td>
+<td class="py-4 px-space-md">
+<span class="inline-flex items-center px-2 py-0.5 rounded-md bg-surface-container-highest text-tertiary font-label-sm text-label-sm">
+                    Archived
+                  </span>
+</td>
+<td class="py-4 px-space-md text-right">
+<button class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md hover:bg-surface-container-high text-tertiary font-label-sm text-label-sm" title="Download Sealed Academic Ledger" type="button">
+<span class="material-symbols-outlined text-[15px]">file_download</span>
+                    Ledger
+                  </button>
+</td>
+</tr>
+<!-- Row 4: Archived Odd 2023-24 -->
+<tr class="hover:bg-surface-container-low transition-colors opacity-90">
+<td class="py-4 px-space-md font-medium text-on-surface-variant font-body-md text-body-md">
+                  2023–24
+                </td>
+<td class="py-4 px-space-md">
+<div class="flex flex-col">
+<span class="font-medium text-on-surface-variant font-body-md text-body-md">Odd Semester</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Semesters I, III, V, VII</span>
+</div>
+</td>
+<td class="py-4 px-space-sm text-center">
+<span class="inline-block px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-label-sm">
+                    Odd
+                  </span>
+</td>
+<td class="py-4 px-space-md font-body-sm text-body-sm text-on-surface-variant">
+<div class="flex flex-col">
+<span>Aug 07, 2023</span>
+<span>Dec 22, 2023</span>
+</div>
+</td>
+<td class="py-4 px-space-sm text-center font-body-md text-body-md text-on-surface-variant">
+                  18
+                </td>
+<td class="py-4 px-space-md text-right font-body-md text-body-md text-on-surface-variant">
+                  3,620
+                </td>
+<td class="py-4 px-space-md">
+<span class="inline-flex items-center px-2 py-0.5 rounded-md bg-surface-container-highest text-tertiary font-label-sm text-label-sm">
+                    Archived
+                  </span>
+</td>
+<td class="py-4 px-space-md text-right">
+<button class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md hover:bg-surface-container-high text-tertiary font-label-sm text-label-sm" title="Download Sealed Academic Ledger" type="button">
+<span class="material-symbols-outlined text-[15px]">file_download</span>
+                    Ledger
+                  </button>
+</td>
+</tr>
+<!-- Row 5: Upcoming Draft 2025-26 Odd -->
+<tr class="hover:bg-primary-fixed/30 transition-colors bg-surface-container-low/50">
+<td class="py-4 px-space-md font-medium text-on-surface font-body-md text-body-md">
+<span class="text-primary font-semibold">2025–26</span>
+</td>
+<td class="py-4 px-space-md">
+<div class="flex flex-col">
+<span class="font-medium text-on-surface font-body-md text-body-md">Odd Semester</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Cohort Ingestion Pending</span>
+</div>
+</td>
+<td class="py-4 px-space-sm text-center">
+<span class="inline-block px-2 py-0.5 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm">
+                    Odd
+                  </span>
+</td>
+<td class="py-4 px-space-md font-body-sm text-body-sm text-on-surface">
+<div class="flex flex-col">
+<span>Aug 04, 2025</span>
+<span class="text-on-surface-variant">Dec 19, 2025</span>
+</div>
+</td>
+<td class="py-4 px-space-sm text-center font-body-md text-body-md text-on-surface">
+                  18
+                </td>
+<td class="py-4 px-space-md text-right font-body-md text-body-md text-outline">
+                  0
+                </td>
+<td class="py-4 px-space-md">
+<span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm font-semibold">
+<span class="material-symbols-outlined text-[13px]">edit_calendar</span>
+                    Draft / Upcoming
+                  </span>
+</td>
+<td class="py-4 px-space-md text-right">
+<button class="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-container-highest hover:bg-primary-fixed text-on-surface hover:text-primary transition-all font-label-md text-label-md font-medium" type="button">
+<span class="material-symbols-outlined text-[15px]">tune</span>
+                    Configure Slots
+                  </button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Table Micro Footer -->
+<div class="px-space-md py-3 bg-surface-container-low flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
+<span>Showing 5 academic terms recorded • Regulated under UGC/AICTE 18-week semester norms</span>
+<div class="flex items-center gap-space-sm">
+<span class="inline-flex items-center gap-1 text-primary">
+<span class="material-symbols-outlined text-[14px]">shield</span> Audit Hash Verified
+            </span>
+</div>
+</div>
+</div>
+<!-- Historical Terms Visual Timeline (Editorial Touch) -->
+<div class="w-full bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col gap-space-md mt-space-sm">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[20px]">view_timeline</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Two-Year Instructional Arc</h3>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Continuous Cycle (Odd &amp; Even Phasing)</span>
+</div>
+<div class="w-full relative py-space-sm">
+<!-- Timeline track -->
+<div class="w-full h-1.5 bg-surface-container-high rounded-full relative">
+<div class="absolute left-[38%] right-[22%] h-full bg-primary rounded-full"></div>
+</div>
+<div class="grid grid-cols-4 gap-2 pt-4">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-tertiary">AY 2023-24 (Even)</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Concluded May '24</span>
+<span class="font-label-sm text-label-sm text-outline-variant mt-0.5">100% Retained</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-tertiary">AY 2024-25 (Odd)</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Concluded Dec '24</span>
+<span class="font-label-sm text-label-sm text-outline-variant mt-0.5">Grades Sealed</span>
+</div>
+<div class="flex flex-col relative">
+<div class="flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="font-label-sm text-label-sm text-primary font-bold">AY 2024-25 (Even)</span>
+</div>
+<span class="font-body-sm text-body-sm font-semibold text-on-surface">Active Session</span>
+<span class="font-label-sm text-label-sm text-emerald-700 mt-0.5">Week 14 In-Progress</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm text-on-surface-variant">AY 2025-26 (Odd)</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Begins Aug '25</span>
+<span class="font-label-sm text-label-sm text-outline-variant mt-0.5">Cohort Planning</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Column: Key Milestones & Regulatory Cutoff Sidebar (Span 4) -->
+<div class="lg:col-span-4 flex flex-col gap-space-lg">
+<!-- Milestones Card -->
+<div class="w-full bg-surface-container-lowest rounded-xl p-space-lg shadow-sm flex flex-col">
+<div class="flex items-center justify-between pb-space-sm">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[22px]">event_upcoming</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Key Milestones &amp; Cutoffs</h3>
+</div>
+<span class="px-2 py-0.5 rounded bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm font-medium">
+            Active Term
+          </span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant pb-space-md">
+          Mandatory grading windows and attendance calculation freeze gates for current Even Semester 2024–25.
+        </p>
+<!-- Milestones Stack -->
+<div class="flex flex-col gap-space-sm">
+<!-- Milestone 1 -->
+<div class="p-space-md rounded-xl bg-surface-container-low flex items-start justify-between gap-space-sm">
+<div class="flex items-start gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container-highest flex items-center justify-center shrink-0 mt-0.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">lock</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Internal Test 1 (IT1) Entry</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Marks submission finalized</span>
+<span class="font-label-sm text-label-sm text-outline mt-1">Feb 28, 2025 • 23:59 IST</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm font-semibold shrink-0">
+              Locked
+            </span>
+</div>
+<!-- Milestone 2 -->
+<div class="p-space-md rounded-xl bg-surface-container-low flex items-start justify-between gap-space-sm">
+<div class="flex items-start gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-surface-container-highest flex items-center justify-center shrink-0 mt-0.5 text-on-surface-variant">
+<span class="material-symbols-outlined text-[18px]">lock</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Internal Test 2 (IT2) Entry</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Assessment scores locked</span>
+<span class="font-label-sm text-label-sm text-outline mt-1">Apr 04, 2025 • 23:59 IST</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm font-semibold shrink-0">
+              Locked
+            </span>
+</div>
+<!-- Milestone 3: Due in 4 days (High Contrast Warning / Action State) -->
+<div class="p-space-md rounded-xl bg-secondary-fixed/50 flex items-start justify-between gap-space-sm shadow-xs">
+<div class="flex items-start gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-primary-fixed flex items-center justify-center shrink-0 mt-0.5 text-primary">
+<span class="material-symbols-outlined text-[18px]">notification_important</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md font-bold text-on-surface">Internal Test 3 (IT3) Entry</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Portal open for 114 faculty members</span>
+<span class="font-label-sm text-label-sm font-semibold text-primary mt-1">May 02, 2025 • 23:59 IST</span>
+</div>
+</div>
+<span class="px-2 py-1 rounded-full bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-bold shrink-0">
+              Due in 4 days
+            </span>
+</div>
+<!-- Milestone 4: Attendance Freeze -->
+<div class="p-space-md rounded-xl bg-surface-container-low flex items-start justify-between gap-space-sm">
+<div class="flex items-start gap-space-sm">
+<div class="w-8 h-8 rounded-lg bg-primary-fixed-dim/40 flex items-center justify-center shrink-0 mt-0.5 text-primary">
+<span class="material-symbols-outlined text-[18px]">ac_unit</span>
+</div>
+<div class="flex flex-col">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Attendance Final Freeze</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Bar on faculty edits; condonation list generated</span>
+<span class="font-label-sm text-label-sm text-outline mt-1">May 16, 2025 • 17:00 IST</span>
+</div>
+</div>
+<span class="px-2 py-0.5 rounded bg-primary-fixed text-on-primary-fixed font-label-sm text-label-sm font-medium shrink-0">
+              In 18 Days
+            </span>
+</div>
+</div>
+<button class="w-full mt-space-md py-2.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-label-md font-medium transition-colors flex items-center justify-center gap-1.5" type="button">
+<span class="material-symbols-outlined text-[18px]">edit_calendar</span>
+<span>Edit Milestone Triggers</span>
+</button>
+</div>
+<!-- Institutional Regulatory Compliance Note -->
+<div class="w-full bg-surface-container-low rounded-xl p-space-md flex flex-col gap-space-xs">
+<div class="flex items-center gap-1.5 text-primary">
+<span class="material-symbols-outlined text-[18px]">policy</span>
+<span class="font-label-md text-label-md font-semibold">Statutory Attendance Rules</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+          As per Academic Senate Resolution 44.2, students below 75% aggregate attendance without verified medical dispensation will be automatically disqualified from Semester-End Examinations upon the May 16 freeze.
+        </p>
+<div class="pt-2 flex items-center justify-between text-on-surface-variant font-label-sm text-label-sm">
+<span>Rule Code: ASC-ATT-75</span>
+<a class="text-primary font-semibold hover:underline" href="#">View Policy →</a>
+</div>
+</div>
+<!-- Calendar Sync & Audit Details Mini-Card -->
+<div class="w-full bg-surface-container-lowest rounded-xl p-space-md shadow-xs flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<span class="material-symbols-outlined text-tertiary text-[20px]">sync</span>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm font-semibold text-on-surface">LMS &amp; Biometric Mirror</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant">Last synced 12 minutes ago</span>
+</div>
+</div>
+<button class="px-2.5 py-1 rounded bg-surface-container text-on-surface hover:bg-surface-container-high font-label-sm text-label-sm font-medium transition-colors" type="button">
+          Force Sync
+        </button>
+</div>
+</div>
+</div>
+<!-- Create Term Modal Panel (Hidden by default, toggled via JS) -->
+<div class="fixed inset-0 z-50 bg-inverse-surface/40 backdrop-blur-sm flex items-center justify-center p-4 hidden" id="termModal">
+<div class="w-full max-w-lg bg-surface-container-lowest rounded-xl shadow-xl p-space-lg flex flex-col gap-space-md transform transition-all">
+<div class="flex items-center justify-between pb-space-xs">
+<div class="flex items-center gap-space-xs">
+<div class="w-8 h-8 rounded-lg bg-primary-fixed flex items-center justify-center text-primary">
+<span class="material-symbols-outlined text-[20px]">add_task</span>
+</div>
+<div>
+<h4 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Create Academic Term</h4>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Define schedule parameters for a new academic semester.</p>
+</div>
+</div>
+<button class="p-1.5 rounded-lg hover:bg-surface-container text-on-surface-variant hover:text-on-surface" id="closeTermModal" type="button">
+<span class="material-symbols-outlined text-[20px]">close</span>
+</button>
+</div>
+<form class="flex flex-col gap-space-sm pt-space-xs" id="newTermForm" onsubmit="event.preventDefault();">
+<div class="grid grid-cols-2 gap-space-sm">
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm font-medium text-on-surface">Academic Year</label>
+<input class="h-10 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary/40" placeholder="e.g. 2025–26" type="text" value="2025–26"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm font-medium text-on-surface">Semester Cycle</label>
+<select class="h-10 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary/40">
+<option value="even">Even Semester (Jan–May)</option>
+<option value="odd">Odd Semester (Aug–Dec)</option>
+<option value="summer">Summer Remedial Term</option>
+</select>
+</div>
+</div>
+<div class="grid grid-cols-2 gap-space-sm">
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm font-medium text-on-surface">Instruction Start Date</label>
+<input class="h-10 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary/40" type="date" value="2025-08-04"/>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm font-medium text-on-surface">Instruction End Date</label>
+<input class="h-10 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary/40" type="date" value="2025-12-19"/>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<label class="font-label-sm text-label-sm font-medium text-on-surface">Target Enrolled Batches</label>
+<div class="p-space-sm rounded-lg bg-surface-container-low flex flex-wrap gap-space-xs">
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm">
+              UG B.Tech (2022–26) <span class="material-symbols-outlined text-[13px] cursor-pointer">close</span>
+</span>
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm">
+              UG B.Tech (2023–27) <span class="material-symbols-outlined text-[13px] cursor-pointer">close</span>
+</span>
+<span class="inline-flex items-center gap-1 px-2 py-1 rounded bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm">
+              PG M.Tech (2024–26) <span class="material-symbols-outlined text-[13px] cursor-pointer">close</span>
+</span>
+</div>
+</div>
+<div class="flex items-center gap-2 pt-space-xs">
+<input class="w-4 h-4 rounded text-primary focus:ring-primary/40" id="immediateActive" type="checkbox"/>
+<label class="font-body-sm text-body-sm text-on-surface cursor-pointer" for="immediateActive">
+            Set as inactive draft (prepare curriculum before student activation)
+          </label>
+</div>
+<div class="flex items-center justify-end gap-space-sm pt-space-md">
+<button class="px-space-md py-2 rounded-lg text-on-surface-variant hover:text-on-surface font-label-md text-label-md" id="cancelTermModal" type="button">
+            Cancel
+          </button>
+<button class="px-space-lg py-2 rounded-lg bg-primary text-on-primary hover:bg-primary-container font-label-md text-label-md font-medium shadow-xs" id="saveTermBtn" type="submit">
+            Save Term Schedule
+          </button>
+</div>
+</form>
+</div>
+</div>
+<!-- Micro Interaction Script for Tab Filtering and Modal -->
+<script>
+    (function initAcademicTerms() {
+      // Modal controls
+      const createBtn = document.getElementById('createTermBtn');
+      const closeBtn = document.getElementById('closeTermModal');
+      const cancelBtn = document.getElementById('cancelTermModal');
+      const saveBtn = document.getElementById('saveTermBtn');
+      const modal = document.getElementById('termModal');
+
+      const openModal = () => {
+        if (modal) modal.classList.remove('hidden');
+      };
+      const closeModal = () => {
+        if (modal) modal.classList.add('hidden');
+      };
+
+      if (createBtn) createBtn.addEventListener('click', openModal);
+      if (closeBtn) closeBtn.addEventListener('click', closeModal);
+      if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+      if (saveBtn) {
+        saveBtn.addEventListener('click', () => {
+          closeModal();
+          // Subtle feedback toast could be plugged here
+        });
+      }
+
+      // Filter tabs switching
+      const filterTabs = document.querySelectorAll('.term-filter-tab');
+      filterTabs.forEach((tab) => {
+        tab.addEventListener('click', () => {
+          filterTabs.forEach(t => {
+            t.classList.remove('bg-surface-container-lowest', 'text-primary', 'font-semibold', 'shadow-xs');
+            t.classList.add('text-on-surface-variant');
+          });
+          tab.classList.add('bg-surface-container-lowest', 'text-primary', 'font-semibold', 'shadow-xs');
+          tab.classList.remove('text-on-surface-variant');
+        });
+      });
+    })();
+  </script>
+</div></main><footer class="w-full bg-surface-container-lowest mt-space-xl border-t border-surface-container-high/40"><div class="max-w-[1440px] mx-auto px-margin-desktop py-space-md flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant"><span>© 2024–2025 AcadTrack Higher-Ed Operations Platform. All rights reserved.</span><div class="flex items-center gap-space-md"><span>Academic Compliance Core v4.2</span><span class="h-3 w-px bg-surface-variant"></span><span>Institutional Accreditation Protocol</span></div></div></footer></body></html>

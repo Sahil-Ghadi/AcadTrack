@@ -1,0 +1,672 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><meta content="web_standard" name="shell-type"/><title>AcadTrack - Attendance &amp; Marks Academic Management System</title><link href="https://fonts.googleapis.com" rel="preconnect"/><link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/><link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = { darkMode: "class", theme: { extend: { "colors": { "inverse-on-surface": "#f9edfd", "primary-fixed-dim": "#d1bcff", "on-secondary-fixed-variant": "#51443c", "surface-container-lowest": "#ffffff", "on-error": "#ffffff", "secondary-container": "#f2dfd3", "on-secondary": "#ffffff", "on-primary-container": "#fffbff", "surface-tint": "#6a4cad", "on-tertiary": "#ffffff", "tertiary-fixed": "#e8defe", "on-surface": "#1f1924", "on-surface-variant": "#494551", "on-secondary-container": "#6f6258", "secondary-fixed": "#f2dfd3", "surface-container": "#f6eafa", "primary": "#674aab", "tertiary": "#5f5873", "on-primary-fixed": "#24005b", "surface-bright": "#fff7fe", "on-primary-fixed-variant": "#513394", "inverse-surface": "#352e3a", "tertiary-fixed-dim": "#cbc2e1", "surface": "#fff7fe", "surface-container-low": "#fcf0ff", "on-tertiary-container": "#fffbff", "background": "#fff7fe", "secondary-fixed-dim": "#d5c3b8", "on-primary": "#ffffff", "on-secondary-fixed": "#231a13", "tertiary-container": "#78718c", "surface-container-highest": "#ebdfef", "error-container": "#ffdad6", "inverse-primary": "#d1bcff", "on-error-container": "#93000a", "on-background": "#1f1924", "secondary": "#695c53", "on-tertiary-fixed": "#1d182f", "surface-variant": "#ebdfef", "surface-dim": "#e2d6e6", "on-tertiary-fixed-variant": "#49435c", "surface-container-high": "#f0e4f4", "primary-fixed": "#e9ddff", "error": "#ba1a1a", "primary-container": "#8163c5", "outline-variant": "#cbc4d3", "outline": "#7a7583" }, "borderRadius": { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" }, "spacing": { "margin": "1rem", "margin-tablet": "1.5rem", "margin-desktop": "2.5rem", "gutter-desktop": "1.5rem", "space-lg": "1.5rem", "gutter": "1.25rem", "space-xl": "2.5rem", "space-xs": "0.25rem", "space-sm": "0.5rem", "space-md": "1rem" }, "fontFamily": { "body-sm": [ "Inter" ], "headline-lg": [ "Geist" ], "headline-sm": [ "Geist" ], "headline-xl": [ "Geist" ], "body-lg": [ "Inter" ], "headline-lg-mobile": [ "Geist" ], "headline-xl-mobile": [ "Geist" ], "headline-md": [ "Geist" ], "label-sm": [ "Inter" ], "body-md": [ "Inter" ], "label-md": [ "Inter" ] }, "fontSize": { "body-sm": [ "12px", { "lineHeight": "18px", "fontWeight": "400" } ], "headline-lg": [ "32px", { "lineHeight": "40px", "letterSpacing": "-0.015em", "fontWeight": "600" } ], "headline-sm": [ "20px", { "lineHeight": "28px", "letterSpacing": "-0.005em", "fontWeight": "500" } ], "headline-xl": [ "40px", { "lineHeight": "48px", "letterSpacing": "-0.02em", "fontWeight": "600" } ], "body-lg": [ "16px", { "lineHeight": "24px", "fontWeight": "400" } ], "headline-lg-mobile": [ "24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "600" } ], "headline-xl-mobile": [ "30px", { "lineHeight": "38px", "letterSpacing": "-0.015em", "fontWeight": "600" } ], "headline-md": [ "24px", { "lineHeight": "32px", "letterSpacing": "-0.01em", "fontWeight": "500" } ], "label-sm": [ "11px", { "lineHeight": "16px", "letterSpacing": "0.04em", "fontWeight": "600" } ], "body-md": [ "14px", { "lineHeight": "20px", "fontWeight": "400" } ], "label-md": [ "13px", { "lineHeight": "18px", "letterSpacing": "0.01em", "fontWeight": "500" } ] } } } };</script></head><body class="bg-surface font-body-md text-on-surface antialiased min-h-screen flex flex-col"><header class="fixed top-0 left-0 w-full z-50 bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)]"><div class="h-28 max-w-[1440px] mx-auto px-margin-desktop flex flex-col justify-between"><div class="h-16 flex items-center justify-between border-b border-surface-container-high/60"><div class="flex items-center gap-space-lg"><div class="flex items-center gap-space-sm"><img alt="AcadTrack Monogram" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/ALJJyrA7r2T_oBnBYMtiYpIZdqRRZlVgpE2TYhBeG_sdSac5OY87kKszdWG-uuDhxQS3svTI31_70HLWW6mCG5pvXz6cWvl1n7-uT-ajP3Y5QiHpa-qWZ-CvCLJQwK8p6_PYKmDO23u5jpcH7YyfRChWvnVY7DLL64cPDKiutS3LfHw4CtNvP6dw-OZ3omDlkDb_nG2TJWTfsM9rVAPcyVupKzfb_YzmX1kElMFZYbgzn4k"/><div class="flex flex-col"><span class="font-headline-sm text-headline-sm text-on-surface leading-none font-semibold">AcadTrack</span><span class="font-label-sm text-label-sm text-on-surface-variant tracking-normal">Attendance &amp; Marks System</span></div></div><div class="h-5 w-px bg-surface-variant"></div><div class="inline-flex items-center gap-space-xs px-3 py-1 rounded-full bg-secondary-fixed text-on-secondary-fixed"><span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span><span class="font-label-sm text-label-sm font-semibold">AY 2024-25 • Even Semester (Active)</span></div></div><div class="flex items-center gap-space-md"><div class="flex items-center gap-space-sm"><img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-2 ring-primary-fixed" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAbquz_Suy7hhbXc_faxutEK-_3-MTbi4L-6quyUFBE1_sCm0ZQrVTtcWUzgQHEOtCy0eqNTUGE21-MVqV3fmCznbaQcX7fBFIpjDMbcaVwf3Xhx1RIcaPPx6EicEJ3e05Ji-h_QEe8hKVTecm-PnSm0PgGL3RuCl96xaaX8dGA7MoL7REtScH3LTtEh8G_P_TgvUmuj5NouWevJG6WWJ7R1xOP7T5Zt-_w3xKWtA"/><div class="flex flex-col text-right"><span class="font-body-sm text-body-sm text-on-surface font-medium leading-tight">dean.academics@university.edu</span><div class="flex justify-end mt-0.5"><span class="inline-flex items-center px-space-xs py-0.5 rounded bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-label-sm">College Administrator</span></div></div></div><div class="h-6 w-px bg-surface-variant mx-space-xs"></div><button class="flex items-center justify-center p-2 rounded-lg text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-colors" title="Sign out of system" type="button"><span class="material-symbols-outlined text-[20px]">logout</span></button></div></div><div class="h-12 flex items-center justify-between"><nav class="flex items-center gap-space-sm h-full" data-active-classes="text-primary font-semibold border-b-2 border-primary bg-surface-container-low"><a class="h-full inline-flex items-center px-space-md text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface hover:bg-surface-container-low" data-path="college-analytics" href="#">College Analytics</a><a aria-current="page" class="h-full inline-flex items-center px-space-md transition-colors text-primary font-semibold border-b-2 border-primary bg-surface-container-low" data-path="hierarchy-and-structure" href="#">Hierarchy &amp; Structure</a><a class="h-full inline-flex items-center px-space-md text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface hover:bg-surface-container-low" data-path="academic-terms" href="#">Academic Terms</a><a class="h-full inline-flex items-center px-space-md text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface hover:bg-surface-container-low" data-path="threshold-settings" href="#">Threshold Settings</a><a class="h-full inline-flex items-center px-space-md text-on-surface-variant font-label-md text-label-md transition-colors hover:text-on-surface hover:bg-surface-container-low" data-path="csv-data-import" href="#">CSV Data Import</a></nav><div class="flex items-center gap-space-xs text-on-surface-variant font-label-sm text-label-sm"><span class="material-symbols-outlined text-[16px]">lock_clock</span><span>Auto-sync enabled</span></div></div></div></header><main class="w-full pt-28 bg-surface flex-1 max-w-[1440px] mx-auto px-margin-desktop"><div class="flex flex-col w-full">
+<!-- Interactive Top Action & Status Ribbon -->
+<section class="flex flex-col gap-space-md mb-space-lg">
+<!-- Breadcrumb & System State Indicator -->
+<div class="flex flex-wrap items-center justify-between gap-space-sm pt-space-xs">
+<div class="flex items-center gap-space-xs font-label-md text-label-md text-on-surface-variant">
+<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-surface-container-high text-on-surface font-medium">
+<span class="material-symbols-outlined text-[16px] text-primary">account_balance</span>
+          Faculty of Engineering &amp; Technology
+        </span>
+<span class="material-symbols-outlined text-[16px] text-outline">chevron_right</span>
+<span class="text-on-surface-variant font-medium">Departments</span>
+<span class="material-symbols-outlined text-[16px] text-outline">chevron_right</span>
+<span class="inline-flex items-center gap-1 text-primary font-semibold">
+          CSE • B.Tech • 2022-26 • Sec A
+        </span>
+</div>
+<div class="flex items-center gap-space-sm">
+<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-secondary-container text-on-secondary-fixed-variant font-label-sm text-label-sm">
+<span class="w-1.5 h-1.5 rounded-full bg-primary animate-ping"></span>
+          Structural Integrity: 100% Validated
+        </span>
+<div class="h-4 w-px bg-surface-container-highest"></div>
+<button class="inline-flex items-center gap-1 text-tertiary hover:text-on-surface font-label-sm text-label-sm transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">history</span>
+          Audit Logs
+        </button>
+</div>
+</div>
+<!-- Main Section Header & Administrative Controls Bar -->
+<div class="flex flex-col lg:flex-row lg:items-end justify-between gap-space-lg bg-surface-container-lowest p-space-lg rounded-xl shadow-sm">
+<div class="max-w-2xl">
+<div class="flex items-center gap-space-xs mb-1">
+<span class="font-label-sm text-label-sm text-primary uppercase tracking-wider font-semibold">Governance &amp; Taxonomy Core</span>
+<span class="text-surface-container-highest">•</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Level 1 - 6 Relational Map</span>
+</div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface">Academic Hierarchy &amp; Structure</h1>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">
+          Configure and inspect institutional organizational topology from high-level departmental chairs down to sub-divided laboratory cohorts.
+        </p>
+</div>
+<div class="flex flex-wrap items-center gap-space-sm">
+<!-- Search Input -->
+<div class="relative min-w-[220px]">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-outline">search</span>
+<input class="w-full h-10 pl-9 pr-3 rounded-lg bg-surface-container-low text-on-surface placeholder:text-on-surface-variant font-body-sm text-body-sm focus:outline-none focus:bg-surface-container-lowest focus:ring-2 focus:ring-primary/20 transition-all" placeholder="Search hierarchy..." type="text"/>
+</div>
+<!-- Filter Selector -->
+<div class="relative">
+<select class="h-10 pl-3 pr-8 rounded-lg bg-surface-container-low text-on-surface font-label-md text-label-md appearance-none focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer">
+<option>All Divisions (Active)</option>
+<option>Engineering (UG &amp; PG)</option>
+<option>Applied Sciences</option>
+<option>Design &amp; Architecture</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-[18px] text-outline pointer-events-none">expand_more</span>
+</div>
+<!-- Action Buttons -->
+<button class="inline-flex items-center gap-1.5 h-10 px-3.5 rounded-lg bg-surface-container-high hover:bg-secondary-container text-on-surface font-label-md text-label-md transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]">add_circle</span>
+          Add Department
+        </button>
+<button class="inline-flex items-center gap-1.5 h-10 px-4 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md shadow-sm transition-all" type="button">
+<span class="material-symbols-outlined text-[18px]">add_task</span>
+          Add Degree Program
+        </button>
+</div>
+</div>
+</section>
+<!-- Hierarchy Metric Ticker Cards -->
+<section class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-space-sm mb-space-lg">
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm">
+<div class="flex items-center justify-between text-on-surface-variant mb-1">
+<span class="font-label-sm text-label-sm">Departments</span>
+<span class="material-symbols-outlined text-[16px] text-primary">domain</span>
+</div>
+<div class="font-headline-md text-headline-md text-on-surface font-semibold">08</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Across 2 Campuses</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm">
+<div class="flex items-center justify-between text-on-surface-variant mb-1">
+<span class="font-label-sm text-label-sm">Degree Programs</span>
+<span class="material-symbols-outlined text-[16px] text-primary">school</span>
+</div>
+<div class="font-headline-md text-headline-md text-on-surface font-semibold">24</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">UG, PG, &amp; Doctoral</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm">
+<div class="flex items-center justify-between text-on-surface-variant mb-1">
+<span class="font-label-sm text-label-sm">Active Batches</span>
+<span class="material-symbols-outlined text-[16px] text-primary">groups_2</span>
+</div>
+<div class="font-headline-md text-headline-md text-on-surface font-semibold">96</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">AY 2024-25 Enrolled</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm">
+<div class="flex items-center justify-between text-on-surface-variant mb-1">
+<span class="font-label-sm text-label-sm">Sections</span>
+<span class="material-symbols-outlined text-[16px] text-primary">meeting_room</span>
+</div>
+<div class="font-headline-md text-headline-md text-on-surface font-semibold">218</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Classrooms Assigned</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm">
+<div class="flex items-center justify-between text-on-surface-variant mb-1">
+<span class="font-label-sm text-label-sm">Lab Cohorts</span>
+<span class="material-symbols-outlined text-[16px] text-primary">biotech</span>
+</div>
+<div class="font-headline-md text-headline-md text-on-surface font-semibold">436</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">Max 32 slots/group</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-lg shadow-sm">
+<div class="flex items-center justify-between text-on-surface-variant mb-1">
+<span class="font-label-sm text-label-sm">Total Capacity</span>
+<span class="material-symbols-outlined text-[16px] text-primary">person_check</span>
+</div>
+<div class="font-headline-md text-headline-md text-on-surface font-semibold">14.2k</div>
+<div class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">94.8% Seat Load</div>
+</div>
+</section>
+<!-- Interactive 4-Column Academic Drill-Down Grid -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-md mb-space-lg items-start">
+<!-- COLUMN 1: DEPARTMENTS -->
+<div class="flex flex-col bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+<!-- Column Header -->
+<div class="p-space-md bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<h2 class="font-label-md text-label-md font-semibold text-on-surface">Level 1 • Departments</h2>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest font-label-sm text-label-sm text-on-surface-variant font-medium">8 Units</span>
+</div>
+<!-- Item List -->
+<div class="flex flex-col p-space-sm gap-1 max-h-[580px] overflow-y-auto">
+<!-- Active Selected Department: CSE -->
+<div class="group relative flex items-center justify-between p-3 rounded-lg bg-surface-container text-on-surface shadow-xs cursor-pointer">
+<div class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary rounded-r"></div>
+<div class="flex flex-col pl-2 min-w-0">
+<div class="flex items-center gap-1.5">
+<span class="font-label-md text-label-md font-semibold text-primary">CSE</span>
+<span class="inline-flex px-1.5 py-0.2 rounded bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-[10px]">Anchor</span>
+</div>
+<span class="font-body-sm text-body-sm font-medium truncate mt-0.5 text-on-surface">Computer Science &amp; Eng.</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">18 Active Batches • 6 Programs</span>
+</div>
+<span class="material-symbols-outlined text-primary text-[20px]">chevron_right</span>
+</div>
+<!-- Department 2 -->
+<div class="flex items-center justify-between p-3 rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer text-on-surface-variant hover:text-on-surface">
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md font-semibold text-on-surface">ECE</span>
+<span class="font-body-sm text-body-sm truncate mt-0.5">Electronics &amp; Comm. Eng.</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">14 Batches • 4 Programs</span>
+</div>
+<span class="material-symbols-outlined text-[18px] opacity-40">chevron_right</span>
+</div>
+<!-- Department 3 -->
+<div class="flex items-center justify-between p-3 rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer text-on-surface-variant hover:text-on-surface">
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md font-semibold text-on-surface">MECH</span>
+<span class="font-body-sm text-body-sm truncate mt-0.5">Mechanical Engineering</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">12 Batches • 3 Programs</span>
+</div>
+<span class="material-symbols-outlined text-[18px] opacity-40">chevron_right</span>
+</div>
+<!-- Department 4 -->
+<div class="flex items-center justify-between p-3 rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer text-on-surface-variant hover:text-on-surface">
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md font-semibold text-on-surface">CIVIL</span>
+<span class="font-body-sm text-body-sm truncate mt-0.5">Civil &amp; Environmental Eng.</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">10 Batches • 2 Programs</span>
+</div>
+<span class="material-symbols-outlined text-[18px] opacity-40">chevron_right</span>
+</div>
+<!-- Department 5 -->
+<div class="flex items-center justify-between p-3 rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer text-on-surface-variant hover:text-on-surface">
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md font-semibold text-on-surface">EEE</span>
+<span class="font-body-sm text-body-sm truncate mt-0.5">Electrical &amp; Electronics Eng.</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">12 Batches • 3 Programs</span>
+</div>
+<span class="material-symbols-outlined text-[18px] opacity-40">chevron_right</span>
+</div>
+<!-- Department 6 -->
+<div class="flex items-center justify-between p-3 rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer text-on-surface-variant hover:text-on-surface">
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md font-semibold text-on-surface">IT</span>
+<span class="font-body-sm text-body-sm truncate mt-0.5">Information Technology</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">16 Batches • 2 Programs</span>
+</div>
+<span class="material-symbols-outlined text-[18px] opacity-40">chevron_right</span>
+</div>
+<!-- Department 7 -->
+<div class="flex items-center justify-between p-3 rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer text-on-surface-variant hover:text-on-surface">
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md font-semibold text-on-surface">BIO-TECH</span>
+<span class="font-body-sm text-body-sm truncate mt-0.5">Biotechnology &amp; Bio-Eng.</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">8 Batches • 2 Programs</span>
+</div>
+<span class="material-symbols-outlined text-[18px] opacity-40">chevron_right</span>
+</div>
+<!-- Department 8 -->
+<div class="flex items-center justify-between p-3 rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer text-on-surface-variant hover:text-on-surface">
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md font-semibold text-on-surface">AI &amp; DS</span>
+<span class="font-body-sm text-body-sm truncate mt-0.5">Artificial Intelligence &amp; Data</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant mt-0.5">6 Batches • 2 Programs</span>
+</div>
+<span class="material-symbols-outlined text-[18px] opacity-40">chevron_right</span>
+</div>
+</div>
+<!-- Quick Add Row -->
+<div class="p-space-sm bg-surface-container-low/50">
+<button class="w-full flex items-center justify-center gap-1.5 py-2 rounded bg-surface-container-lowest hover:bg-surface-container font-label-sm text-label-sm text-on-surface font-medium transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">domain_add</span>
+          New Department
+        </button>
+</div>
+</div>
+<!-- COLUMN 2: DEGREE PROGRAMS (under CSE) -->
+<div class="flex flex-col bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+<!-- Column Header -->
+<div class="p-space-md bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<h2 class="font-label-md text-label-md font-semibold text-on-surface">Level 2 • Programs</h2>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest font-label-sm text-label-sm text-on-surface-variant font-medium">CSE Scope</span>
+</div>
+<!-- Item List -->
+<div class="flex flex-col p-space-sm gap-2">
+<!-- Active Selected Program: B.Tech CSE -->
+<div class="group relative flex flex-col p-3 rounded-lg bg-surface-container text-on-surface shadow-xs cursor-pointer">
+<div class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary rounded-r"></div>
+<div class="flex items-center justify-between pl-2 mb-1">
+<span class="font-label-md text-label-md font-semibold text-primary">B.Tech Computer Science</span>
+<span class="material-symbols-outlined text-primary text-[20px]">chevron_right</span>
+</div>
+<div class="flex items-center gap-2 pl-2">
+<span class="px-2 py-0.5 rounded bg-secondary-fixed text-on-secondary-fixed font-label-sm text-[10px] font-semibold">UG • 4 Years</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">4 Active Batches</span>
+</div>
+<div class="mt-2 pl-2 flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant">
+<span>Enrolled: 742</span>
+<span class="text-tertiary">Prog. Code: 102</span>
+</div>
+</div>
+<!-- Program 2: M.Tech -->
+<div class="flex flex-col p-3 rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer text-on-surface-variant hover:text-on-surface">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-md text-label-md font-semibold text-on-surface">M.Tech Software Engineering</span>
+<span class="material-symbols-outlined text-[18px] opacity-40">chevron_right</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-label-sm text-[10px]">PG • 2 Years</span>
+<span class="font-label-sm text-label-sm">2 Active Batches</span>
+</div>
+<div class="mt-2 flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant">
+<span>Enrolled: 84</span>
+<span>Prog. Code: 204</span>
+</div>
+</div>
+<!-- Program 3: Ph.D. -->
+<div class="flex flex-col p-3 rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer text-on-surface-variant hover:text-on-surface">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Ph.D. in Computing Sciences</span>
+<span class="material-symbols-outlined text-[18px] opacity-40">chevron_right</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-label-sm text-[10px]">Doctoral • Rolling</span>
+<span class="font-label-sm text-label-sm">3 Cohorts</span>
+</div>
+<div class="mt-2 flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant">
+<span>Scholars: 32</span>
+<span>Prog. Code: 901</span>
+</div>
+</div>
+<!-- Program 4: Dual Degree -->
+<div class="flex flex-col p-3 rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer text-on-surface-variant hover:text-on-surface">
+<div class="flex items-center justify-between mb-1">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Dual Degree B.Tech+M.Tech</span>
+<span class="material-symbols-outlined text-[18px] opacity-40">chevron_right</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-label-sm text-[10px]">UG+PG • 5 Yrs</span>
+<span class="font-label-sm text-label-sm">5 Batches</span>
+</div>
+<div class="mt-2 flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant">
+<span>Enrolled: 110</span>
+<span>Prog. Code: 118</span>
+</div>
+</div>
+</div>
+<!-- Quick Context Box -->
+<div class="mt-auto p-space-md bg-surface-container-low/40">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-primary text-[20px]">verified</span>
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm font-semibold text-on-surface">Curricular Framework</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">CBCS NEP-2020 Compliant</span>
+</div>
+</div>
+</div>
+</div>
+<!-- COLUMN 3: BATCHES & ACADEMIC YEARS -->
+<div class="flex flex-col bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+<!-- Column Header -->
+<div class="p-space-md bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<h2 class="font-label-md text-label-md font-semibold text-on-surface">Level 3 • Batches</h2>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest font-label-sm text-label-sm text-on-surface-variant font-medium">B.Tech CSE</span>
+</div>
+<!-- Item List -->
+<div class="flex flex-col p-space-sm gap-2">
+<!-- Batch 1: 2021-25 -->
+<div class="flex flex-col p-3 rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer text-on-surface-variant hover:text-on-surface">
+<div class="flex items-center justify-between mb-1">
+<div class="flex items-center gap-1.5">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Batch 2021-25</span>
+<span class="px-1.5 py-0.2 rounded bg-surface-container-highest text-on-surface font-label-sm text-[10px]">Sem 8</span>
+</div>
+<span class="material-symbols-outlined text-[18px] opacity-40">chevron_right</span>
+</div>
+<span class="font-body-sm text-body-sm">Final Year • Graduating Cohort</span>
+<div class="mt-2 flex items-center justify-between font-label-sm text-label-sm">
+<span>3 Sections (184 Students)</span>
+<span class="text-tertiary">Cap: 98%</span>
+</div>
+</div>
+<!-- Batch 2: 2022-26 (SELECTED) -->
+<div class="group relative flex flex-col p-3 rounded-lg bg-surface-container text-on-surface shadow-xs cursor-pointer">
+<div class="absolute left-0 top-1.5 bottom-1.5 w-1 bg-primary rounded-r"></div>
+<div class="flex items-center justify-between pl-2 mb-1">
+<div class="flex items-center gap-1.5">
+<span class="font-label-md text-label-md font-semibold text-primary">Batch 2022-26</span>
+<span class="px-1.5 py-0.2 rounded bg-primary-fixed text-on-primary-fixed-variant font-label-sm text-[10px] font-bold">Sem 6</span>
+</div>
+<span class="material-symbols-outlined text-primary text-[20px]">chevron_right</span>
+</div>
+<span class="pl-2 font-body-sm text-body-sm font-medium text-on-surface">Third Year • Current Term</span>
+<div class="mt-2 pl-2 flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant">
+<span>3 Sections (A, B, C)</span>
+<span class="font-semibold text-primary">186 Enrolled</span>
+</div>
+</div>
+<!-- Batch 3: 2023-27 -->
+<div class="flex flex-col p-3 rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer text-on-surface-variant hover:text-on-surface">
+<div class="flex items-center justify-between mb-1">
+<div class="flex items-center gap-1.5">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Batch 2023-27</span>
+<span class="px-1.5 py-0.2 rounded bg-surface-container-highest text-on-surface font-label-sm text-[10px]">Sem 4</span>
+</div>
+<span class="material-symbols-outlined text-[18px] opacity-40">chevron_right</span>
+</div>
+<span class="font-body-sm text-body-sm">Second Year Core Foundation</span>
+<div class="mt-2 flex items-center justify-between font-label-sm text-label-sm">
+<span>3 Sections (188 Students)</span>
+<span class="text-tertiary">Cap: 99%</span>
+</div>
+</div>
+<!-- Batch 4: 2024-28 -->
+<div class="flex flex-col p-3 rounded-lg hover:bg-surface-container-low transition-colors cursor-pointer text-on-surface-variant hover:text-on-surface">
+<div class="flex items-center justify-between mb-1">
+<div class="flex items-center gap-1.5">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Batch 2024-28</span>
+<span class="px-1.5 py-0.2 rounded bg-surface-container-highest text-on-surface font-label-sm text-[10px]">Sem 2</span>
+</div>
+<span class="material-symbols-outlined text-[18px] opacity-40">chevron_right</span>
+</div>
+<span class="font-body-sm text-body-sm">First Year Freshman Intake</span>
+<div class="mt-2 flex items-center justify-between font-label-sm text-label-sm">
+<span>3 Sections (184 Students)</span>
+<span class="text-tertiary">Cap: 96%</span>
+</div>
+</div>
+</div>
+<!-- Quick Add Batch -->
+<div class="mt-auto p-space-sm bg-surface-container-low/50">
+<button class="w-full flex items-center justify-center gap-1.5 py-2 rounded bg-surface-container-lowest hover:bg-surface-container font-label-sm text-label-sm text-on-surface font-medium transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">calendar_add_on</span>
+          Add Academic Batch
+        </button>
+</div>
+</div>
+<!-- COLUMN 4: SECTIONS & LAB GROUPS (Batch 2022-26) -->
+<div class="flex flex-col bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+<!-- Column Header -->
+<div class="p-space-md bg-surface-container-low flex items-center justify-between">
+<div class="flex items-center gap-space-xs">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<h2 class="font-label-md text-label-md font-semibold text-on-surface">Level 4 • Sections &amp; Labs</h2>
+</div>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest font-label-sm text-label-sm text-on-surface-variant font-medium">2022-26</span>
+</div>
+<!-- Item List -->
+<div class="flex flex-col p-space-sm gap-3 max-h-[580px] overflow-y-auto">
+<!-- Section A (Selected Hierarchy Focus) -->
+<div class="flex flex-col rounded-lg bg-surface-container p-3 shadow-xs">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-primary"></span>
+<span class="font-label-md text-label-md font-bold text-on-surface">Section A</span>
+<span class="px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm font-semibold">64 Students</span>
+</div>
+<span class="font-label-sm text-label-sm text-primary font-semibold">Active Focus</span>
+</div>
+<!-- Lab Sub-Groups Nested -->
+<div class="flex flex-col gap-1.5 pl-3 border-l-2 border-primary-container/40 mt-1">
+<div class="flex items-center justify-between p-2 rounded bg-surface-container-lowest hover:bg-surface-container-high transition-colors cursor-pointer">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary">science</span>
+<span class="font-label-md text-label-md font-medium text-on-surface">Lab Group A1</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">32 Students</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded bg-surface-container-lowest hover:bg-surface-container-high transition-colors cursor-pointer">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary">science</span>
+<span class="font-label-md text-label-md font-medium text-on-surface">Lab Group A2</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">32 Students</span>
+</div>
+</div>
+</div>
+<!-- Section B -->
+<div class="flex flex-col rounded-lg bg-surface-container-low p-3 hover:bg-surface-container/60 transition-colors">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-outline"></span>
+<span class="font-label-md text-label-md font-semibold text-on-surface">Section B</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm">62 Students</span>
+</div>
+<button class="text-tertiary hover:text-on-surface" type="button">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+<!-- Lab Sub-Groups Nested -->
+<div class="flex flex-col gap-1.5 pl-3 border-l-2 border-outline-variant/60 mt-1">
+<div class="flex items-center justify-between p-2 rounded bg-surface-container-lowest hover:bg-surface-container transition-colors cursor-pointer">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary">science</span>
+<span class="font-label-md text-label-md font-medium text-on-surface">Lab Group B1</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">31 Students</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded bg-surface-container-lowest hover:bg-surface-container transition-colors cursor-pointer">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary">science</span>
+<span class="font-label-md text-label-md font-medium text-on-surface">Lab Group B2</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">31 Students</span>
+</div>
+</div>
+</div>
+<!-- Section C -->
+<div class="flex flex-col rounded-lg bg-surface-container-low p-3 hover:bg-surface-container/60 transition-colors">
+<div class="flex items-center justify-between mb-2">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-outline"></span>
+<span class="font-label-md text-label-md font-semibold text-on-surface">Section C</span>
+<span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm">60 Students</span>
+</div>
+<button class="text-tertiary hover:text-on-surface" type="button">
+<span class="material-symbols-outlined text-[18px]">more_vert</span>
+</button>
+</div>
+<!-- Lab Sub-Groups Nested -->
+<div class="flex flex-col gap-1.5 pl-3 border-l-2 border-outline-variant/60 mt-1">
+<div class="flex items-center justify-between p-2 rounded bg-surface-container-lowest hover:bg-surface-container transition-colors cursor-pointer">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary">science</span>
+<span class="font-label-md text-label-md font-medium text-on-surface">Lab Group C1</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">30 Students</span>
+</div>
+<div class="flex items-center justify-between p-2 rounded bg-surface-container-lowest hover:bg-surface-container transition-colors cursor-pointer">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px] text-tertiary">science</span>
+<span class="font-label-md text-label-md font-medium text-on-surface">Lab Group C2</span>
+</div>
+<span class="font-label-sm text-label-sm text-on-surface-variant">30 Students</span>
+</div>
+</div>
+</div>
+</div>
+<!-- Quick Add Section -->
+<div class="mt-auto p-space-sm bg-surface-container-low/50 flex gap-2">
+<button class="flex-1 flex items-center justify-center gap-1 py-2 rounded bg-surface-container-lowest hover:bg-surface-container font-label-sm text-label-sm text-on-surface font-medium transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">add_box</span>
+          Section
+        </button>
+<button class="flex-1 flex items-center justify-center gap-1 py-2 rounded bg-surface-container-lowest hover:bg-surface-container font-label-sm text-label-sm text-on-surface font-medium transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">science</span>
+          Lab Group
+        </button>
+</div>
+</div>
+</section>
+<!-- Level 5 Details & Summary Card: Active Selected Node -->
+<section class="bg-surface-container-lowest rounded-xl shadow-sm p-space-lg mb-space-lg">
+<!-- Header of Node Details -->
+<div class="flex flex-col lg:flex-row lg:items-center justify-between gap-space-md pb-space-md border-b border-surface-container-high/60">
+<div class="flex items-start sm:items-center gap-space-md">
+<div class="w-12 h-12 rounded-xl bg-primary-fixed flex items-center justify-center text-primary shrink-0">
+<span class="material-symbols-outlined text-[28px]">hub</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-2 flex-wrap">
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">
+              B.Tech CSE • Batch 2022-26 • Section A
+            </h3>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm font-semibold">
+              Currently Selected Node
+            </span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+            Operational Unit Identifier: <span class="font-mono text-on-surface">ENG-CSE-UG22-SEC-A</span> • Room 402, CS Informatics Block
+          </span>
+</div>
+</div>
+<!-- Administrative Actions -->
+<div class="flex items-center gap-space-sm flex-wrap">
+<button class="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-label-md transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">download</span>
+          Export Roster CSV
+        </button>
+<button class="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-label-md transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">archive</span>
+          Archive Section
+        </button>
+<button class="inline-flex items-center gap-1.5 h-9 px-4 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md shadow-xs transition-colors" type="button">
+<span class="material-symbols-outlined text-[18px]">tune</span>
+          Edit Metadata
+        </button>
+</div>
+</div>
+<!-- Metadata Grid Mosaic -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-space-lg pt-space-lg">
+<!-- Card 1: Faculty Coordinator -->
+<div class="flex flex-col p-space-md rounded-lg bg-surface-container-low">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold mb-space-sm">Faculty Coordinator</span>
+<div class="flex items-center gap-space-sm">
+<img class="w-10 h-10 rounded-full object-cover" data-alt="Portrait photo of a distinguished Indian university professor with glasses, scholarly demeanor in an academic office setting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDzIzX_lu5qoDq49CLOWapSIQIGjjXsbCeirTO4Tz5KLdi11mTQXf62XIp0wJsAf0wSHH-sJAIruI9iMSX_-EY5Z9opv-AjTvH0EKb6ySxBYDWxKV-ncNSjQR12sibjxYx18JCvZ_YnbTXdKywT6trK2KPrT71zHK7i5Rw6jHNWgHpedNXPf0pEyNXX8bgQcpFgkoQGvMMfnn9knBs6HgUrMZJCW3SNZ1K-a-IbPQ"/>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md text-body-md font-semibold text-on-surface truncate">Dr. Aris Thorne, Ph.D.</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Assoc. Professor, CSE Dept</span>
+<span class="font-label-sm text-label-sm text-primary hover:underline cursor-pointer">aris.thorne@acadtrack.edu</span>
+</div>
+</div>
+</div>
+<!-- Card 2: Student Representative -->
+<div class="flex flex-col p-space-md rounded-lg bg-surface-container-low">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold mb-space-sm">Class Representative</span>
+<div class="flex items-center gap-space-sm">
+<img class="w-10 h-10 rounded-full object-cover" data-alt="Headshot of a collegiate student representative with a warm smile wearing university jacket" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDZBl51QOJHK59XHUMcrrL8tDkEa9hHwY-ALtfZ_RtpamFVgxh5aq2oEM1SOtbgAs9LID-VAgLDkg8SOZx-p2wu2PLsqiTVo1055kLUc3P-ubMJLbiYaWNCWjNr1E7L6HWLlvehG9ZN0mz3XY_v41mg9YGg8U7tFNZgKRov77WgudKKyOLumpEx9Ss4OPEy47vJNtBqAvE5Wt32duiJfoS5kmDCIuYBdcN1hERC0w"/>
+<div class="flex flex-col min-w-0">
+<span class="font-body-md text-body-md font-semibold text-on-surface truncate">Elena Vance</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Roll No: CS22B1042</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-mono">Attendance: 96.4%</span>
+</div>
+</div>
+</div>
+<!-- Card 3: Capacity & Cohort Balance -->
+<div class="flex flex-col p-space-md rounded-lg bg-surface-container-low">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold mb-1">Capacity &amp; Distribution</span>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-md text-headline-md font-semibold text-on-surface">64</span>
+<span class="font-label-md text-label-md text-on-surface-variant">/ 64 Max Seats (100%)</span>
+</div>
+<!-- Progress Bar -->
+<div class="w-full bg-surface-container-highest h-2 rounded-full overflow-hidden mt-2">
+<div class="bg-primary h-full rounded-full w-full"></div>
+</div>
+<div class="flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant mt-2">
+<span>Lab A1: 32 (50%)</span>
+<span>Lab A2: 32 (50%)</span>
+</div>
+</div>
+<!-- Card 4: Academic Compliance Status -->
+<div class="flex flex-col p-space-md rounded-lg bg-surface-container-low">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold mb-1">Compliance &amp; Timetable</span>
+<div class="flex items-center gap-2 mt-1">
+<span class="material-symbols-outlined text-[20px] text-primary">verified_user</span>
+<span class="font-label-md text-label-md font-semibold text-on-surface">Accreditation Ready</span>
+</div>
+<span class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+          All 6 core modules assigned with required lab hours allocated.
+        </span>
+<div class="mt-2 flex items-center gap-1 font-label-sm text-label-sm text-tertiary">
+<span class="material-symbols-outlined text-[14px]">schedule</span>
+<span>Last sync: 2 hours ago</span>
+</div>
+</div>
+</div>
+<!-- Active Linked Curricular Courses Table for this Section -->
+<div class="mt-space-lg">
+<div class="flex items-center justify-between mb-space-sm">
+<div class="flex items-center gap-2">
+<span class="font-label-md text-label-md font-semibold text-on-surface">Linked Course Offerings (Semester 6)</span>
+<span class="px-2 py-0.5 rounded bg-surface-container-highest text-on-surface-variant font-label-sm text-label-sm">6 Total</span>
+</div>
+<button class="inline-flex items-center gap-1 text-primary hover:text-primary-container font-label-sm text-label-sm font-semibold transition-colors" type="button">
+<span class="material-symbols-outlined text-[16px]">add</span>
+          Map Course
+        </button>
+</div>
+<!-- Responsive Table Container -->
+<div class="w-full overflow-x-auto rounded-lg shadow-xs">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-surface-container-low font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">
+<th class="py-2.5 px-4 font-semibold">Course Code</th>
+<th class="py-2.5 px-4 font-semibold">Course Title</th>
+<th class="py-2.5 px-4 font-semibold">Type</th>
+<th class="py-2.5 px-4 font-semibold">Faculty In-Charge</th>
+<th class="py-2.5 px-4 font-semibold">Weekly Hours (L-T-P)</th>
+<th class="py-2.5 px-4 font-semibold text-right">Avg. Attendance</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-surface-container font-body-sm text-body-sm text-on-surface">
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="py-3 px-4 font-mono font-medium text-primary">CS301</td>
+<td class="py-3 px-4 font-medium">Design &amp; Analysis of Algorithms</td>
+<td class="py-3 px-4">
+<span class="px-2 py-0.5 rounded bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm">Theory + Lab</span>
+</td>
+<td class="py-3 px-4">Dr. Aris Thorne</td>
+<td class="py-3 px-4 font-mono text-on-surface-variant">3-1-2 (4 Cr)</td>
+<td class="py-3 px-4 text-right font-semibold text-on-surface">92.4%</td>
+</tr>
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="py-3 px-4 font-mono font-medium text-primary">CS303</td>
+<td class="py-3 px-4 font-medium">Distributed Operating Systems</td>
+<td class="py-3 px-4">
+<span class="px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-label-sm text-label-sm">Theory</span>
+</td>
+<td class="py-3 px-4">Prof. Maya Lin</td>
+<td class="py-3 px-4 font-mono text-on-surface-variant">3-0-0 (3 Cr)</td>
+<td class="py-3 px-4 text-right font-semibold text-on-surface">88.9%</td>
+</tr>
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="py-3 px-4 font-mono font-medium text-primary">CS307</td>
+<td class="py-3 px-4 font-medium">Cloud Infrastructure &amp; Virtualization</td>
+<td class="py-3 px-4">
+<span class="px-2 py-0.5 rounded bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm">Lab Intensive</span>
+</td>
+<td class="py-3 px-4">Dr. Kevin Zhang</td>
+<td class="py-3 px-4 font-mono text-on-surface-variant">1-0-4 (3 Cr)</td>
+<td class="py-3 px-4 text-right font-semibold text-on-surface">94.1%</td>
+</tr>
+<tr class="hover:bg-surface-container-low/50 transition-colors">
+<td class="py-3 px-4 font-mono font-medium text-primary">CS315</td>
+<td class="py-3 px-4 font-medium">Machine Learning Foundations</td>
+<td class="py-3 px-4">
+<span class="px-2 py-0.5 rounded bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm">Theory + Lab</span>
+</td>
+<td class="py-3 px-4">Dr. Sarah Al-Mansoor</td>
+<td class="py-3 px-4 font-mono text-on-surface-variant">3-0-2 (4 Cr)</td>
+<td class="py-3 px-4 text-right font-semibold text-on-surface">91.8%</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+</div></main><footer class="w-full bg-surface-container-lowest mt-space-xl border-t border-surface-container-high/40"><div class="max-w-[1440px] mx-auto px-margin-desktop py-space-md flex items-center justify-between font-label-sm text-label-sm text-on-surface-variant"><span>© 2024–2025 AcadTrack Higher-Ed Operations Platform. All rights reserved.</span><div class="flex items-center gap-space-md"><span>Academic Compliance Core v4.2</span><span class="h-3 w-px bg-surface-variant"></span><span>Institutional Accreditation Protocol</span></div></div></footer></body></html>
