@@ -17,6 +17,7 @@ export function setStoredAuth(token: string, user: User): void {
   if (typeof window === "undefined") return;
   localStorage.setItem("acadtrack_token", token);
   localStorage.setItem("acadtrack_user", JSON.stringify(user));
+  window.dispatchEvent(new CustomEvent("acadtrack_auth_change", { detail: user }));
 }
 
 export function getStoredUser(): User | null {
@@ -29,6 +30,28 @@ export function clearStoredAuth(): void {
   if (typeof window === "undefined") return;
   localStorage.removeItem("acadtrack_token");
   localStorage.removeItem("acadtrack_user");
+  window.dispatchEvent(new CustomEvent("acadtrack_auth_change", { detail: null }));
+}
+
+export function subscribeToAuthChange(callback: (user: User | null) => void): () => void {
+  if (typeof window === "undefined") return () => {};
+
+  const handleCustom = (e: Event) => {
+    callback((e as CustomEvent).detail ?? getStoredUser());
+  };
+  const handleStorage = (e: StorageEvent) => {
+    if (e.key === "acadtrack_user" || e.key === "acadtrack_token") {
+      callback(getStoredUser());
+    }
+  };
+
+  window.addEventListener("acadtrack_auth_change", handleCustom);
+  window.addEventListener("storage", handleStorage);
+
+  return () => {
+    window.removeEventListener("acadtrack_auth_change", handleCustom);
+    window.removeEventListener("storage", handleStorage);
+  };
 }
 
 export async function apiFetch<T>(
@@ -60,6 +83,14 @@ export async function apiFetch<T>(
     } catch {
       errorDetail = await res.text();
     }
+
+    if (res.status === 403 && errorDetail.toLowerCase().includes("insufficient permissions")) {
+      const activeUser = getStoredUser();
+      if (activeUser) {
+        errorDetail = `Forbidden: Insufficient permissions for current account ${activeUser.email} (${activeUser.role}). If you switched accounts in another browser tab, please sign back in as an authorized user.`;
+      }
+    }
+
     const err = new Error(errorDetail);
     (err as any).status = res.status;
     throw err;

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getStoredUser, clearStoredAuth, User } from "@/lib/api";
+import { getStoredUser, clearStoredAuth, subscribeToAuthChange, User } from "@/lib/api";
 import { LogOut, ShieldCheck, UserCheck, GraduationCap, BookOpen } from "lucide-react";
 
 export interface NavItem {
@@ -24,7 +24,7 @@ export default function AppHeader({
   navItems = [],
   activeTab,
   onTabChange,
-  termText = "AY 2024-25 • Even Semester (Active)",
+  termText = "AY 2026-27 • Active Term",
   statusBadge,
 }: AppHeaderProps) {
   const router = useRouter();
@@ -32,6 +32,10 @@ export default function AppHeader({
 
   useEffect(() => {
     setUser(getStoredUser());
+    const unsubscribe = subscribeToAuthChange((newUser) => {
+      setUser(newUser);
+    });
+    return unsubscribe;
   }, []);
 
   async function handleLogout() {

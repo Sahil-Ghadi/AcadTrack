@@ -11,7 +11,8 @@
     "test:unit": "tsx tests/import-unit.test.ts",
     "test:import": "tsx tests/import-api.test.ts",
     "test:integration": "tsx tests/import-api.test.ts",
-    "test:timetable": "tsx tests/timetable-analytics.test.ts"
+    "test:timetable": "tsx tests/timetable-analytics.test.ts",
+    "test:faculty-sync": "tsx tests/faculty-lectures-sync.test.ts"
   },
   "keywords": [],
   "author": "",

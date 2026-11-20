@@ -908,6 +908,7 @@ const PERIOD_TIMES: Record<number, { start: string; end: string }> = {
   4: { start: "12:15", end: "13:15" },
   5: { start: "14:00", end: "15:00" },
   6: { start: "15:00", end: "16:00" },
+  7: { start: "16:00", end: "17:00" },
 };
 
 export async function loadTimetableContext(
@@ -1136,8 +1137,8 @@ export function validateTimetableRow(
   let startTime = startTimeVal;
   let endTime = endTimeVal;
 
-  if (periodNo && (isNaN(periodNo) || periodNo < 1 || periodNo > 6)) {
-    errors.push(`Period number must be between 1 and 6 (got ${periodVal})`);
+  if (periodNo && (isNaN(periodNo) || periodNo < 1 || periodNo > 12)) {
+    errors.push(`Period number must be between 1 and 12 (got ${periodVal})`);
   }
 
   if (periodNo && PERIOD_TIMES[periodNo]) {

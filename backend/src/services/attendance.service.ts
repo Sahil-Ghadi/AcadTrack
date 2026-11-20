@@ -1,5 +1,93 @@
 import pool from "../config/db";
 
+// ======================== SESSION MATERIALIZATION ========================
+
+/**
+ * Concurrency-safe, idempotent materialization of lecture sessions for a date range.
+ * Resolves the applicable academic term(s), checks weekdays, and inserts
+ * scheduled sessions for all timetable slots matching the day of week.
+ *
+ * Guarantees:
+ * 1. Idempotency: ON CONFLICT (timetable_slot_id, session_date) DO NOTHING prevents duplicate sessions.
+ * 2. Concurrency Safety: Managed at the PostgreSQL unique index level.
+ * 3. State Preservation: Existing cancelled, held, and locked sessions or sessions with attendance are untouched.
+ * 4. Sunday (ISO DOW 7) has no university slots and is automatically skipped.
+ */
+export async function ensureLectureSessionsForDateRange(
+  collegeId: number,
+  startDateStr: string,
+  endDateStr: string,
+): Promise<number> {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(startDateStr) || !/^\d{4}-\d{2}-\d{2}$/.test(endDateStr)) {
+    return 0;
+  }
+
+  // 1. Find academic terms covering the date range for this college
+  const termsRes = await pool.query(
+    `SELECT id, academic_year, term_type, start_date, end_date, is_current
+       FROM academic_term
+      WHERE college_id = $1
+        AND (
+          (start_date <= $3::date AND end_date >= $2::date)
+          OR (is_current = true AND $2::date >= start_date - INTERVAL '7 days' AND $3::date <= end_date + INTERVAL '7 days')
+        )
+      ORDER BY
+        CASE WHEN start_date <= $3::date AND end_date >= $2::date THEN 0 ELSE 1 END,
+        is_current DESC,
+        start_date DESC`,
+    [collegeId, startDateStr, endDateStr],
+  );
+
+  if (termsRes.rows.length === 0) {
+    return 0;
+  }
+
+  let totalInserted = 0;
+  for (const term of termsRes.rows) {
+    // Generate dates intersecting the requested range with the term boundaries
+    const insertRes = await pool.query(
+      `INSERT INTO lecture_session (timetable_slot_id, session_date, status)
+       SELECT ts.id, dt::date, 'scheduled'
+         FROM timetable_slot ts
+         JOIN subject_assignment sa ON sa.id = ts.subject_assignment_id
+         JOIN subject su            ON su.id = sa.subject_id
+         JOIN department dep        ON dep.id = su.department_id,
+         generate_series(
+           GREATEST($2::date, $4::date),
+           LEAST($3::date, $5::date),
+           INTERVAL '1 day'
+         ) AS dt
+        WHERE dep.college_id = $1
+          AND ts.term_id = $6
+          AND EXTRACT(ISODOW FROM dt::date) = ts.day_of_week
+          AND EXTRACT(ISODOW FROM dt::date) BETWEEN 1 AND 6
+       ON CONFLICT (timetable_slot_id, session_date) DO NOTHING
+       RETURNING id`,
+      [
+        collegeId,
+        startDateStr,
+        endDateStr,
+        term.start_date,
+        term.end_date,
+        term.id,
+      ],
+    );
+    totalInserted += insertRes.rowCount ?? 0;
+  }
+
+  return totalInserted;
+}
+
+/**
+ * Materialize lecture sessions for a single date.
+ */
+export async function ensureLectureSessionsForDate(
+  collegeId: number,
+  dateStr: string,
+): Promise<number> {
+  return ensureLectureSessionsForDateRange(collegeId, dateStr, dateStr);
+}
+
 // ======================== FACULTY'S LECTURES ========================
 
 export async function getFacultyLectures(
@@ -9,6 +97,9 @@ export async function getFacultyLectures(
 ) {
   // If no date provided, default to current date in YYYY-MM-DD
   const dateStr = options?.date ?? new Date().toISOString().split("T")[0];
+
+  // Materialize any recurring timetable slots for this date before querying
+  await ensureLectureSessionsForDate(collegeId, dateStr);
 
   const { rows } = await pool.query(
     `SELECT ls.id, ls.timetable_slot_id, ls.session_date, ls.status,
@@ -25,7 +116,7 @@ export async function getFacultyLectures(
        JOIN timetable_slot ts     ON ts.id = ls.timetable_slot_id
        JOIN subject_assignment sa ON sa.id = ts.subject_assignment_id
        JOIN subject su            ON su.id = sa.subject_id
-       JOIN faculty f             ON f.id = ts.faculty_id
+       JOIN faculty f             ON f.id = sa.faculty_id
        JOIN section sec           ON sec.id = sa.section_id
        LEFT JOIN lab_group lg     ON lg.id = sa.lab_group_id
        JOIN department d          ON d.id = su.department_id
@@ -35,7 +126,7 @@ export async function getFacultyLectures(
         AND ls.session_date = $3::date
         AND ($4::boolean IS NULL OR ls.is_locked = $4)
       GROUP BY ls.id, ts.id, sa.id, su.id, sec.id, lg.id
-      ORDER BY ts.period_no ASC`,
+      ORDER BY ts.period_no ASC, ts.start_time ASC`,
     [collegeId, userId, dateStr, options?.isLocked !== undefined ? options.isLocked : null],
   );
   return rows;

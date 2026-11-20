@@ -1,5 +1,9 @@
 import pool from "../config/db";
 import { serializeToCsv } from "../utils/csv/csv-serializer";
+import {
+  ensureLectureSessionsForDate,
+  ensureLectureSessionsForDateRange,
+} from "./attendance.service";
 
 // ======================== TIMETABLE SLOTS ========================
 
@@ -192,7 +196,23 @@ export async function createSlot(
       data.room,
     ],
   );
-  return rows[0];
+
+  const newSlot = rows[0];
+  try {
+    const termRes = await pool.query(
+      `SELECT start_date, end_date FROM academic_term WHERE id = $1`,
+      [newSlot.term_id],
+    );
+    if (termRes.rows.length > 0) {
+      await ensureLectureSessionsForDateRange(
+        collegeId,
+        termRes.rows[0].start_date.toISOString().split("T")[0],
+        termRes.rows[0].end_date.toISOString().split("T")[0],
+      );
+    }
+  } catch {}
+
+  return newSlot;
 }
 
 export async function updateSlot(
@@ -521,6 +541,12 @@ export async function listLectureSessions(
     subjectAssignmentId?: number;
   },
 ) {
+  if (options?.date) {
+    await ensureLectureSessionsForDate(collegeId, options.date);
+  } else if (options?.startDate && options?.endDate) {
+    await ensureLectureSessionsForDateRange(collegeId, options.startDate, options.endDate);
+  }
+
   const { rows } = await pool.query(
     `SELECT ls.id, ls.timetable_slot_id, ls.session_date, ls.status,
             ls.is_locked, ls.locked_at, ls.locked_by,

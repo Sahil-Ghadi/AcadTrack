@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import AppHeader from "@/components/AppHeader";
-import { apiFetch, getStoredUser } from "@/lib/api";
+import { apiFetch, getStoredUser, subscribeToAuthChange, User } from "@/lib/api";
 import {
   Calendar,
   CheckCircle,
@@ -37,7 +37,14 @@ export default function FacultyDashboard() {
   const [activeTab, setActiveTab] = useState<"lectures" | "marks" | "stats">("lectures");
 
   // --- Tab 1: Lectures & Attendance State ---
-  const [selectedDate, setSelectedDate] = useState("2026-10-05");
+  const [selectedDate, setSelectedDate] = useState(() => {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  });
+  const [currentTerm, setCurrentTerm] = useState<any | null>(null);
   const [lectures, setLectures] = useState<any[]>([]);
   const [loadingLectures, setLoadingLectures] = useState(false);
   const [selectedSession, setSelectedSession] = useState<any | null>(null);
@@ -68,9 +75,44 @@ export default function FacultyDashboard() {
   const [statsData, setStatsData] = useState<any | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
 
+  // --- Multi-Tab Session & Role Mismatch State ---
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [roleMismatch, setRoleMismatch] = useState<string | null>(null);
+
+  useEffect(() => {
+    function evaluateUser(u: User | null) {
+      setCurrentUser(u);
+      if (u && u.role !== "faculty" && u.role !== "college_admin") {
+        setRoleMismatch(
+          `Session Mismatch: You are currently signed in as ${u.email} (${u.role === "student" ? "Student" : u.role === "dept_admin" ? "Department Admin" : u.role}). Faculty workspace actions require a faculty account.`
+        );
+      } else {
+        setRoleMismatch(null);
+      }
+    }
+
+    evaluateUser(getStoredUser());
+    const unsubscribe = subscribeToAuthChange((newUser) => {
+      evaluateUser(newUser);
+      if (newUser && (newUser.role === "faculty" || newUser.role === "college_admin")) {
+        loadFacultyAssignments();
+        loadCurrentTerm();
+      }
+    });
+    return unsubscribe;
+  }, []);
+
   useEffect(() => {
     loadFacultyAssignments();
+    loadCurrentTerm();
   }, []);
+
+  async function loadCurrentTerm() {
+    try {
+      const term = await apiFetch<any>("/api/institution/academic-terms/current");
+      setCurrentTerm(term);
+    } catch {}
+  }
 
   useEffect(() => {
     if (activeTab === "lectures") {
@@ -161,6 +203,10 @@ export default function FacultyDashboard() {
 
   async function submitAttendance(lock: boolean) {
     if (!selectedSession) return;
+    if (currentUser && currentUser.role !== "faculty" && currentUser.role !== "college_admin") {
+      setActionError(`Cannot submit attendance: Current active account is ${currentUser.email} (${currentUser.role}). Please sign in with a faculty account.`);
+      return;
+    }
     setSubmittingAttendance(true);
     setActionSuccess(null);
     setActionError(null);
@@ -187,6 +233,10 @@ export default function FacultyDashboard() {
   // --- Template Download Handlers ---
   async function handleDownloadAttendanceTemplate() {
     if (!selectedSession) return;
+    if (currentUser && currentUser.role !== "faculty" && currentUser.role !== "college_admin") {
+      setActionError(`Cannot download template: Current active account is ${currentUser.email} (${currentUser.role}). Please sign in with a faculty account.`);
+      return;
+    }
     setDownloadingAttendanceTemplate(true);
     try {
       const csvText = await apiFetch<string>(
@@ -210,6 +260,10 @@ export default function FacultyDashboard() {
 
   async function handleDownloadMarksTemplate() {
     if (!selectedAssignId) return;
+    if (currentUser && currentUser.role !== "faculty" && currentUser.role !== "college_admin") {
+      setActionError(`Cannot download template: Current active account is ${currentUser.email} (${currentUser.role}). Please sign in with a faculty account.`);
+      return;
+    }
     setDownloadingMarksTemplate(true);
     try {
       const csvText = await apiFetch<string>(
@@ -359,7 +413,11 @@ export default function FacultyDashboard() {
     }
   }
 
-  const user = getStoredUser();
+  const user = currentUser;
+
+  const termDisplay = currentTerm
+    ? `AY ${currentTerm.academic_year} • ${currentTerm.term_type === "even" ? "Even" : "Odd"} Semester (Active)`
+    : "AY 2026-27 • Active Term";
 
   return (
     <div className="min-h-screen bg-[#FFF9F7] flex flex-col font-sans selection:bg-[#F0E5F7] selection:text-[#55368F]">
@@ -367,7 +425,7 @@ export default function FacultyDashboard() {
       <AppHeader
         activeTab={activeTab}
         onTabChange={(tab) => setActiveTab(tab as any)}
-        termText="AY 2026-27 • Even Semester (Active)"
+        termText={termDisplay}
         statusBadge="Faculty Portal Active"
         navItems={[
           { key: "lectures", label: "Lectures & Attendance", icon: Calendar },
@@ -401,6 +459,40 @@ export default function FacultyDashboard() {
             <span className="text-xs font-medium text-[#777080]">Trigger Attendance Immutability Enabled</span>
           </div>
         </div>
+
+        {/* Role Mismatch Alert (Cross-tab session detection) */}
+        {roleMismatch && (
+          <div className="mb-6 p-4 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+              <span>{roleMismatch}</span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              {currentUser?.role === "student" && (
+                <a
+                  href="/student"
+                  className="px-3 py-1.5 rounded-lg bg-[#7150B5] text-white hover:bg-[#55368F] transition text-xs font-medium"
+                >
+                  Go to Student Portal
+                </a>
+              )}
+              {currentUser?.role === "dept_admin" && (
+                <a
+                  href="/dept-admin"
+                  className="px-3 py-1.5 rounded-lg bg-[#7150B5] text-white hover:bg-[#55368F] transition text-xs font-medium"
+                >
+                  Go to HOD Dashboard
+                </a>
+              )}
+              <a
+                href="/login"
+                className="px-3 py-1.5 rounded-lg bg-white border border-[#EAE2EA] text-[#29232F] hover:bg-neutral-50 transition text-xs font-medium"
+              >
+                Sign In as Faculty
+              </a>
+            </div>
+          </div>
+        )}
 
         {/* Global Notifications */}
         {actionSuccess && (
@@ -468,8 +560,9 @@ export default function FacultyDashboard() {
                       <span>Loading scheduled sessions...</span>
                     </div>
                   ) : lectures.length === 0 ? (
-                    <div className="p-8 text-center text-xs text-[#777080]">
-                      No lectures scheduled on this date.
+                    <div className="p-8 text-center text-xs text-[#777080] space-y-1">
+                      <p className="font-semibold text-[#29232F]">No lectures scheduled</p>
+                      <p className="text-[11px]">There are no recurring timetable slots allocated to you on this date.</p>
                     </div>
                   ) : (
                     lectures.map((lec) => {
@@ -717,12 +810,20 @@ export default function FacultyDashboard() {
                     )}
                   </div>
                 </div>
+              ) : lectures.length === 0 ? (
+                <div className="bg-white rounded-2xl border border-[#EAE2EA] p-12 text-center text-[#777080]">
+                  <Calendar className="w-12 h-12 mx-auto text-[#777080]/40 mb-3" />
+                  <p className="text-base font-bold text-[#29232F]">No Lectures on {selectedDate}</p>
+                  <p className="text-xs text-[#777080] mt-1 max-w-sm mx-auto">
+                    You have no teaching sessions or laboratory batches scheduled on this date in the active academic term.
+                  </p>
+                </div>
               ) : (
                 <div className="bg-white rounded-2xl border border-[#EAE2EA] p-12 text-center text-[#777080]">
                   <Calendar className="w-12 h-12 mx-auto text-[#777080]/40 mb-3" />
-                  <p className="text-base font-bold text-[#29232F]">No Lecture Selected</p>
+                  <p className="text-base font-bold text-[#29232F]">Select a Lecture</p>
                   <p className="text-xs text-[#777080] mt-1">
-                    Select a lecture from the schedule list on the left to review or mark attendance.
+                    Choose a session from the list on the left to mark or review attendance.
                   </p>
                 </div>
               )}

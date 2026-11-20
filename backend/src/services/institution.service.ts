@@ -268,7 +268,9 @@ export async function getCurrentTerm(collegeId: number) {
   const { rows } = await pool.query(
     `SELECT id, college_id, academic_year, term_type, start_date, end_date, is_current
        FROM academic_term
-      WHERE college_id = $1 AND is_current = true`,
+      WHERE college_id = $1
+      ORDER BY is_current DESC, start_date DESC
+      LIMIT 1`,
     [collegeId],
   );
   return rows[0] || null;

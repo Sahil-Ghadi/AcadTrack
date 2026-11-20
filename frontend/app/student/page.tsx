@@ -67,11 +67,24 @@ export default function StudentDashboard() {
   const [courseFilter, setCourseFilter] = useState<"all" | "theory" | "lab" | "shortage">("all");
   const [showCondonationModal, setShowCondonationModal] = useState(false);
   const [storedUser, setStoredUser] = useState<User | null>(null);
+  const [currentTerm, setCurrentTerm] = useState<any | null>(null);
 
   useEffect(() => {
     setStoredUser(getStoredUser());
     loadReport();
+    loadCurrentTerm();
   }, []);
+
+  async function loadCurrentTerm() {
+    try {
+      const term = await apiFetch<any>("/api/institution/academic-terms/current");
+      setCurrentTerm(term);
+    } catch {}
+  }
+
+  const termDisplay = currentTerm
+    ? `AY ${currentTerm.academic_year} • ${currentTerm.term_type === "even" ? "Even" : "Odd"} Semester (Active)`
+    : "AY 2026-27 • Active Term";
 
   async function loadReport() {
     setLoading(true);
@@ -92,7 +105,7 @@ export default function StudentDashboard() {
         <AppHeader
           activeTab={activeTab}
           onTabChange={(k) => setActiveTab(k as any)}
-          termText="AY 2024-25 • Even Semester (Active)"
+          termText={termDisplay}
           statusBadge="Student Portal"
           navItems={[
             { key: "overview", label: "Overview & Progress", icon: GraduationCap },
@@ -115,7 +128,7 @@ export default function StudentDashboard() {
         <AppHeader
           activeTab={activeTab}
           onTabChange={(k) => setActiveTab(k as any)}
-          termText="AY 2024-25 • Even Semester (Active)"
+          termText={termDisplay}
           statusBadge="Student Portal"
           navItems={[
             { key: "overview", label: "Overview & Progress", icon: GraduationCap },
@@ -234,7 +247,7 @@ export default function StudentDashboard() {
       <AppHeader
         activeTab={activeTab}
         onTabChange={(k) => setActiveTab(k as any)}
-        termText="AY 2024-25 • Even Semester (Active)"
+        termText={termDisplay}
         statusBadge="Student Portal"
         navItems={[
           { key: "overview", label: "Overview & Progress", icon: GraduationCap },
@@ -313,7 +326,7 @@ export default function StudentDashboard() {
                 <div className="flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#FFF9F7] border border-[#EAE2EA] text-[#777080] text-xs font-medium">
                   <Calendar className="w-3.5 h-3.5 text-[#7150B5]" />
                   <span>
-                    AY 2024-25 Even Semester &bull;{" "}
+                    {termDisplay} &bull;{" "}
                     <strong className="text-[#29232F] font-semibold">{subjects.length} Courses Enrolled</strong>
                   </span>
                 </div>
@@ -473,7 +486,7 @@ export default function StudentDashboard() {
                   <h2 className="text-lg font-bold text-[#29232F]">Registered Courses & Academic Standing</h2>
                 </div>
                 <p className="text-xs text-[#777080] mt-0.5">
-                  Detailed real-time metrics for {subjects.length} enrolled subjects in Semester • AY 2024-25
+                  Detailed real-time metrics for {subjects.length} enrolled subjects in {termDisplay}
                 </p>
               </div>
 

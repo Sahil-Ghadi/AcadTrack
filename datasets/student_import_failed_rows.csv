@@ -1,0 +1,7 @@
+﻿Row Number,roll_number,name,email,section,admission_year,Import Error
+10,24B-CO-023,Girish Vishwanath Gawde,24b.co.023@acadtrack.test,A,2024,Roll number '24B-CO-023' already exists in database
+15,24B-CO-045,Pratham Govind Honawarkar,24b.co.045@acadtrack.test,A,2024,Roll number '24B-CO-045' already exists in database
+17,24B-CO-049,Sahil Gajanan Ghadi,24b.co.049@acadtrack.test,A,2024,Roll number '24B-CO-049' already exists in database
+20,24B-CO-056,Sanjeet Deelip Ghadi,24b.co.056@acadtrack.test,A,2024,Roll number '24B-CO-056' already exists in database
+30,24B-CO-001,Aayushi Rajesh Prabhu,24b.co.001@acadtrack.test,A,2024,Roll number '24B-CO-001' already exists in database
+36,24B-CO-012,Chandrakant Nitin Dalvi,24b.co.012@acadtrack.test,A,2024,Roll number '24B-CO-012' already exists in database

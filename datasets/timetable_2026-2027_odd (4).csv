@@ -1,0 +1,9 @@
+﻿Subject Code,Subject Name,Subject Type,Faculty Name,Faculty Code,Department,Academic Year,Term Type,Section,Lab Group,Day,Period,Start Time,End Time,Room
+CO501,Database Management Systems,theory,Dr. Meera Kulkarni,EMP101,Computer Engineering,2026-2027,odd,A,,Monday,1,09:00,10:00,R204
+CO502,Operating Systems,theory,Prof. Anil Desai,EMP102,Computer Engineering,2026-2027,odd,A,,Monday,2,10:00,11:00,R204
+CO502,Operating Systems,theory,Prof. Anil Desai,EMP102,Computer Engineering,2026-2027,odd,A,,Tuesday,1,09:00,10:00,R204
+CO503,Computer Networks,theory,Prof. Neha Prabhu,EMP103,Computer Engineering,2026-2027,odd,A,,Tuesday,2,10:00,11:00,R204
+CO501,Database Management Systems,theory,Dr. Meera Kulkarni,EMP101,Computer Engineering,2026-2027,odd,A,,Wednesday,2,10:00,11:00,R204
+CO502,Operating Systems,theory,Prof. Anil Desai,EMP102,Computer Engineering,2026-2027,odd,A,,Thursday,1,09:00,10:00,R204
+CO503,Computer Networks,theory,Prof. Neha Prabhu,EMP103,Computer Engineering,2026-2027,odd,A,,Thursday,2,10:00,11:00,R204
+CO5E1,Cloud Computing (Elective),theory,Dr. Meera Kulkarni,EMP101,Computer Engineering,2026-2027,odd,A,,Friday,3,11:15,12:15,R305

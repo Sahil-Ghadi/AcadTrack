@@ -164,12 +164,12 @@ async function run() {
   });
 
   await testAsync("Timetable CSV Preview catches room and faculty clashes", async () => {
-    // Generate a CSV with intentional clashes on Friday (Day 5) Period 1
+    // Generate a CSV with intentional clashes on Saturday (Day 6) Period 1
     const csvContent = [
       "Subject Code,Faculty Code,Section,Lab Group,Day,Period,Start Time,End Time,Room,Academic Term",
-      "CO501,EMP101,A,,Friday,1,09:00,10:00,R101,AY 2026-2027",
-      "CO502,EMP101,B,,Friday,1,09:00,10:00,R102,AY 2026-2027", // Faculty EMP101 clash!
-      "CO503,EMP102,A,,Friday,1,09:00,10:00,R101,AY 2026-2027", // Room R101 clash & Section A whole-class clash!
+      "CO501,EMP101,A,,Saturday,1,09:00,10:00,R101,AY 2026-2027",
+      "CO502,EMP101,B,,Saturday,1,09:00,10:00,R102,AY 2026-2027", // Faculty EMP101 clash!
+      "CO503,EMP102,A,,Saturday,1,09:00,10:00,R101,AY 2026-2027", // Room R101 clash & Section A whole-class clash!
     ].join("\n");
 
     const parsed = parseCsv(Buffer.from(csvContent));
